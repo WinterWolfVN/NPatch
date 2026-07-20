@@ -26,10 +26,10 @@ import org.apache.commons.io.FilenameUtils;
 import org.lsposed.npatch.share.Constants;
 import org.lsposed.npatch.share.LSPConfig;
 import org.lsposed.npatch.share.PatchConfig;
-import org.lsposed.patch.util.ApkSignatureHelper;
-import org.lsposed.patch.util.JavaLogger;
-import org.lsposed.patch.util.Logger;
-import org.lsposed.patch.util.ManifestParser;
+import org.lsposed.npatch.patch.util.ApkSignatureHelper;
+import org.lsposed.npatch.patch.util.JavaLogger;
+import org.lsposed.npatch.patch.util.Logger;
+import org.lsposed.npatch.patch.util.ManifestParser;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -51,6 +51,12 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class NPatch {
+
+    private static final String NPATCH_KEYSTORE_PASSWORD_ENC = "a2hpbm9s";
+    private static final String NPATCH_KEY_ALIAS_ENC = "MT8jag==";
+    private static final String FPA_KEYSTORE_PASSWORD_ENC = "a2hpbm9sbWI=";
+    private static final String FPA_KEY_ALIAS_ENC = "Oyoq";
+    private static final int SECRET_XOR_KEY = 0x5a;
 
     static class PatchError extends Error {
         public PatchError(String message, Throwable cause) {
@@ -80,8 +86,8 @@ public class NPatch {
     @Parameter(names = {"-d", "--debuggable"}, description = "Set app to be debuggable")
     private boolean debuggableFlag = false;
 
-    @Parameter(names = {"-l", "--sigbypasslv"}, description = "Signature bypass level. 0 (disable), 1 (pm), 2 (pm+openat). default 0")
-    private int sigbypassLevel = 0;
+    @Parameter(names = {"-l", "--sigbypasslv"}, description = "Signature bypass mode. 0: None, 1: Basic, 2: High, 3: Extreme, 4: Seccomp. default 1")
+    private int sigbypassLevel = 1;
 
     @Parameter(names = {"--injectdex"}, description = "Inject directly the loader dex file into the original application package")
     private boolean injectDex = false;
@@ -99,13 +105,22 @@ public class NPatch {
     private boolean outputLog = true;
 
     @Parameter(names = {"-k", "--keystore"}, arity = 4, description = "Set custom signature keystore. Followed by 4 arguments: keystore path, keystore password, keystore alias, keystore alias password")
-    private List<String> keystoreArgs = Arrays.asList(null, "123456", "key0", "123456");
+    private List<String> keystoreArgs = null;
+
+    @Parameter(names = {"-npa", "--npatch-keystore"}, description = "Use built-in NPatch keystore")
+    private boolean useNpatchKeystore = false;
+
+    @Parameter(names = {"-fpa", "--fpa-keystore"}, description = "Use built-in FPA keystore")
+    private boolean useFpaKeystore = false;
 
     @Parameter(names = {"--manager"}, description = "Use manager (Cannot work with embedding modules)")
     private boolean useManager = false;
 
     @Parameter(names = {"-r", "--allowdown"}, description = "Allow downgrade installation by overriding versionCode to 1 (In most cases, the app can still get the correct versionCode)")
     private boolean overrideVersionCode = false;
+
+    @Parameter(names = {"--versioncode"}, description = "Custom versionCode used when --allowdown is enabled. default 1")
+    private int overrideVersionCodeValue = 1;
 
     @Parameter(names = {"-v", "--verbose"}, description = "Verbose output")
     private boolean verbose = false;
@@ -116,6 +131,14 @@ public class NPatch {
     private String packageName;
 
     private static final String ANDROID_MANIFEST_XML = "AndroidManifest.xml";
+    private static final String META_INF_PREFIX = "META-INF/";
+    private static final String META_INF_MANIFEST = "META-INF/MANIFEST.MF";
+    private static final HashSet<String> APK_SIGNATURE_EXTENSIONS = new HashSet<>(Arrays.asList(
+            ".SF",
+            ".RSA",
+            ".DSA",
+            ".EC"
+    ));
     private static final HashSet<String> ARCHES = new HashSet<>(Arrays.asList(
             "arm64-v8a",
             "x86_64"
@@ -146,6 +169,14 @@ public class NPatch {
         }
         if (!modules.isEmpty() && useManager) {
             logger.e("Should not use --embed and --manager at the same time\n");
+            help = true;
+        }
+        if (keystoreArgs != null && (useNpatchKeystore || useFpaKeystore)) {
+            logger.e("Cannot use -k with -npa or -fpa\n");
+            help = true;
+        }
+        if (useNpatchKeystore && useFpaKeystore) {
+            logger.e("Cannot use -npa and -fpa at the same time\n");
             help = true;
         }
 
@@ -201,7 +232,7 @@ public class NPatch {
 
         logger.i("Parsing original apk...");
 
-        boolean embedOriginal = sigbypassLevel >= Constants.SIGBYPASS_LV_PM_OPENAT;
+        boolean embedOriginal = sigbypassLevel >= Constants.SIGBYPASS_BASIC;
 
         try (ZFile dstZFile = ZFile.openReadWrite(outputFile, Z_FILE_OPTIONS);
              ZFile srcZFile = embedOriginal
@@ -210,31 +241,32 @@ public class NPatch {
 
             // sign apk
             try {
-                var keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-                if (keystoreArgs.get(0) == null) {
-                    logger.i("Register apk signer with default keystore...");
-                    try (var is = getClass().getClassLoader().getResourceAsStream("assets/keystore")) {
-                        keyStore.load(is, keystoreArgs.get(1).toCharArray());
-                    }
-                } else {
+                var keyStore = KeyStore.getInstance("BKS");
+                if (useNpatchKeystore || (!useFpaKeystore && keystoreArgs == null)) {
+                    logger.i("Register apk signer with built-in NPatch keystore...");
+                    registerBuiltinSigner(keyStore, dstZFile, "assets/npatch.key", NPATCH_KEYSTORE_PASSWORD_ENC, NPATCH_KEY_ALIAS_ENC);
+                } else if (useFpaKeystore) {
+                    logger.i("Register apk signer with built-in FPA keystore...");
+                    registerBuiltinSigner(keyStore, dstZFile, "assets/fpa_app.key", FPA_KEYSTORE_PASSWORD_ENC, FPA_KEY_ALIAS_ENC);
+                } else if (keystoreArgs != null) {
                     logger.i("Register apk signer with custom keystore...");
                     try (var is = new FileInputStream(keystoreArgs.get(0))) {
                         keyStore.load(is, keystoreArgs.get(1).toCharArray());
                     }
+                    var entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(keystoreArgs.get(2), new KeyStore.PasswordProtection(keystoreArgs.get(3).toCharArray()));
+                    new SigningExtension(SigningOptions.builder()
+                            .setMinSdkVersion(24)
+                            .setV2SigningEnabled(true)
+                            .setCertificates((X509Certificate[]) entry.getCertificateChain())
+                            .setKey(entry.getPrivateKey())
+                            .build()).register(dstZFile);
                 }
-                var entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(keystoreArgs.get(2), new KeyStore.PasswordProtection(keystoreArgs.get(3).toCharArray()));
-                new SigningExtension(SigningOptions.builder()
-                        .setMinSdkVersion(24)
-                        .setV2SigningEnabled(true)
-                        .setCertificates((X509Certificate[]) entry.getCertificateChain())
-                        .setKey(entry.getPrivateKey())
-                        .build()).register(dstZFile);
             } catch (Exception e) {
                 throw new PatchError("Failed to register signer", e);
             }
 
             String originalSignature = null;
-            if (sigbypassLevel > 0) {
+            if (sigbypassLevel > Constants.SIGBYPASS_NONE) {
                 originalSignature = ApkSignatureHelper.getApkSignInfo(srcApkFile.getAbsolutePath());
                 if (originalSignature == null || originalSignature.isEmpty()) {
                     throw new PatchError("get original signature failed");
@@ -278,7 +310,7 @@ public class NPatch {
                 for (StoredEntry entry : srcZFile.entries()) {
                     String name = entry.getCentralDirectoryHeader().getName();
                     if (dstZFile.get(name) != null) continue;
-                    if (name.startsWith("META-INF") && (name.endsWith(".SF") || name.endsWith(".MF") || name.endsWith(".RSA")))
+                    if (isApkSignatureEntry(name))
                         continue;
                     if (srcZFile instanceof NestedZip) {
                         ((NestedZip) srcZFile).addFileLink(name, name);
@@ -293,7 +325,7 @@ public class NPatch {
 
             logger.i("Patching apk...");
             // modify manifest
-            final var config = new PatchConfig(useManager, debuggableFlag, overrideVersionCode, sigbypassLevel, originalSignature, appComponentFactory, isInjectProvider, outputLog, newPackage, useMicroG);
+            final var config = new PatchConfig(useManager, debuggableFlag, overrideVersionCode, overrideVersionCodeValue, sigbypassLevel, originalSignature, appComponentFactory, isInjectProvider, outputLog, newPackage, useMicroG);
             final var configBytes = new Gson().toJson(config).getBytes(StandardCharsets.UTF_8);
             final var metadata = Base64.getEncoder().encodeToString(configBytes);
             try (var is = new ByteArrayInputStream(modifyManifestFile(manifestEntry.open(), metadata, minSdkVersion, pair.packageName, newPackage, originalSignature))) {
@@ -313,7 +345,7 @@ public class NPatch {
             logger.i("Adding metaloader dex...");
             try (var is = getClass().getClassLoader().getResourceAsStream(Constants.META_LOADER_DEX_ASSET_PATH)) {
                 if (is == null) throw new PatchError("Meta loader dex not found");
-                if (!injectDex) {
+                if (embedOriginal) {
                     dstZFile.add("classes.dex", is);
                 } else {
                     var dexCount = srcZFile.entries().stream().filter(entry -> {
@@ -324,8 +356,8 @@ public class NPatch {
                 }
             } catch (Throwable e) {
                 throw new PatchError("Error when adding dex", e);
-            }                     
-            
+            }
+
             if (isInjectProvider){
                 try (var is = getClass().getClassLoader().getResourceAsStream("assets/mtprovider.dex")) {
                     dstZFile.add("assets/npatch/mtprovider.dex", is);
@@ -361,7 +393,6 @@ public class NPatch {
                         // More exception info
                         throw new PatchError("Error when adding native lib", e);
                     }
-                    logger.d("added " + entryName);
                 }
 
                 logger.i("Embedding modules...");
@@ -374,9 +405,9 @@ public class NPatch {
             for (StoredEntry entry : srcZFile.entries()) {
                 String name = entry.getCentralDirectoryHeader().getName();
                 if (dstZFile.get(name) != null) continue;
-                if (!injectDex && name.startsWith("classes") && name.endsWith(".dex")) continue;
+                if (embedOriginal && name.startsWith("classes") && name.endsWith(".dex")) continue;
                 if (name.equals("AndroidManifest.xml")) continue;
-                if (name.startsWith("META-INF") && (name.endsWith(".SF") || name.endsWith(".MF") || name.endsWith(".RSA")))
+                if (isApkSignatureEntry(name))
                     continue;
 
                 boolean linked = false;
@@ -407,6 +438,26 @@ public class NPatch {
         logger.i("Done. Output APK: " + outputFile.getAbsolutePath());
     }
 
+    private static boolean isApkSignatureEntry(String name) {
+        if (name == null || !name.startsWith(META_INF_PREFIX)) {
+            return false;
+        }
+        String upperName = name.toUpperCase(Locale.ROOT);
+        // v1 簽名的 Manifest 只能移除固定檔名，避免誤刪其他 .MF 資源。
+        if (META_INF_MANIFEST.equals(upperName)) {
+            return true;
+        }
+        int fileNameStart = upperName.lastIndexOf('/') + 1;
+        if (fileNameStart >= upperName.length()) {
+            return false;
+        }
+        String fileName = upperName.substring(fileNameStart);
+        int extensionStart = fileName.lastIndexOf('.');
+        // 只看 META-INF 下的實際檔名副檔名，避免子路徑或目錄名稱誤判。
+        return extensionStart > 0
+                && APK_SIGNATURE_EXTENSIONS.contains(fileName.substring(extensionStart));
+    }
+
     private void embedModules(ZFile zFile) {
         for (var module : modules) {
             File file = new File(module);
@@ -428,10 +479,52 @@ public class NPatch {
         }
     }
 
+    private void registerBuiltinSigner(KeyStore keyStore, ZFile dstZFile, String keystoreResource, String passwordToken, String aliasToken) throws Exception {
+        var password = decodeSecretChars(passwordToken);
+        try {
+            try (var is = getClass().getClassLoader().getResourceAsStream(keystoreResource)) {
+                keyStore.load(is, password);
+            }
+
+            var alias = decodeSecretString(aliasToken);
+            var entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(alias, new KeyStore.PasswordProtection(password));
+            new SigningExtension(SigningOptions.builder()
+                    .setMinSdkVersion(24)
+                    .setV2SigningEnabled(true)
+                    .setCertificates((X509Certificate[]) entry.getCertificateChain())
+                    .setKey(entry.getPrivateKey())
+                    .build()).register(dstZFile);
+        } finally {
+            Arrays.fill(password, '\0');
+        }
+    }
+
+    private static char[] decodeSecretChars(String token) {
+        byte[] encoded = Base64.getDecoder().decode(token);
+        char[] decoded = new char[encoded.length];
+        for (int i = 0; i < encoded.length; i++) {
+            decoded[i] = (char) (encoded[i] ^ SECRET_XOR_KEY);
+        }
+        return decoded;
+    }
+
+    private static String decodeSecretString(String token) {
+        char[] decoded = decodeSecretChars(token);
+        try {
+            return new String(decoded);
+        } finally {
+            Arrays.fill(decoded, '\0');
+        }
+    }
+
     private byte[] modifyManifestFile(InputStream is, String metadata, int minSdkVersion, String originPackage, String newPackage, String originalSignature) throws IOException {
         ModificationProperty property = new ModificationProperty();
 
         String targetPackage = (newPackage != null && !newPackage.isEmpty()) ? newPackage : originPackage;
+
+        if (overrideVersionCode) {
+            property.addManifestAttribute(new AttributeItem(NodeValue.Manifest.VERSION_CODE, overrideVersionCodeValue));
+        }
 
         if (minSdkVersion > 0)
             property.addUsesSdkAttribute(new AttributeItem(NodeValue.UsesSDK.MIN_SDK_VERSION, minSdkVersion));
