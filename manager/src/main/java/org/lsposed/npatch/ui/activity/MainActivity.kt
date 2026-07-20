@@ -8,7 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.padding
@@ -31,7 +31,7 @@ import org.lsposed.npatch.ui.page.startAppDestination
 import org.lsposed.npatch.ui.theme.LSPTheme
 import org.lsposed.npatch.ui.util.LocalSnackbarHost
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     @OptIn(ExperimentalAnimationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
