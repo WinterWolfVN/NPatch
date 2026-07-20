@@ -1,0 +1,91 @@
+name: Add Language Strings
+
+on:
+  workflow_dispatch:
+
+jobs:
+  add-strings:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add language strings
+        run: |
+          RES="manager/src/main/res"
+
+          add_strings() {
+            local folder="$1"
+            local lang_str="$2"
+            local system_str="$3"
+            local file="$RES/$folder/strings.xml"
+
+            if [ ! -f "$file" ]; then
+              echo "⚠️  Không tìm thấy: $file"
+              return
+            fi
+
+            if grep -q "settings_language" "$file"; then
+              echo "✅ Đã có sẵn: $folder"
+              return
+            fi
+
+            sed -i "s|</resources>|    <string name=\"settings_language\">$lang_str</string>\n    <string name=\"settings_language_system\">$system_str</string>\n</resources>|" "$file"
+            echo "✅ Đã thêm: $folder"
+          }
+
+          add_strings "values"         "Language"                       "Follow System"
+          add_strings "values-af"      "Taal"                           "Volg stelsel"
+          add_strings "values-ar"      "اللغة"                          "اتبع النظام"
+          add_strings "values-bg"      "Език"                           "Следвай системата"
+          add_strings "values-bn"      "ভাষা"                           "সিস্টেম অনুসরণ করুন"
+          add_strings "values-ca"      "Idioma"                         "Segueix el sistema"
+          add_strings "values-cs"      "Jazyk"                          "Podle systému"
+          add_strings "values-da"      "Sprog"                          "Følg system"
+          add_strings "values-de"      "Sprache"                        "System folgen"
+          add_strings "values-el"      "Γλώσσα"                        "Ακολούθησε το σύστημα"
+          add_strings "values-es"      "Idioma"                         "Seguir el sistema"
+          add_strings "values-et"      "Keel"                           "Järgi süsteemi"
+          add_strings "values-fa"      "زبان"                           "پیروی از سیستم"
+          add_strings "values-fi"      "Kieli"                          "Seuraa järjestelmää"
+          add_strings "values-fr"      "Langue"                         "Suivre le système"
+          add_strings "values-hi"      "भाषा"                           "सिस्टम का अनुसरण करें"
+          add_strings "values-hr"      "Jezik"                          "Prati sustav"
+          add_strings "values-hu"      "Nyelv"                          "Rendszer követése"
+          add_strings "values-in"      "Bahasa"                         "Ikuti sistem"
+          add_strings "values-it"      "Lingua"                         "Segui il sistema"
+          add_strings "values-iw"      "שפה"                            "עקוב אחר המערכת"
+          add_strings "values-ja"      "言語"                            "システムに従う"
+          add_strings "values-ko"      "언어"                            "시스템 따르기"
+          add_strings "values-ku"      "Ziman"                          "Pergalê bişopîne"
+          add_strings "values-lt"      "Kalba"                          "Sekti sistemą"
+          add_strings "values-nl"      "Taal"                           "Volg systeem"
+          add_strings "values-no"      "Språk"                          "Følg system"
+          add_strings "values-pl"      "Język"                          "Zgodnie z systemem"
+          add_strings "values-pt"      "Idioma"                         "Seguir o sistema"
+          add_strings "values-pt-rBR"  "Idioma"                         "Seguir o sistema"
+          add_strings "values-ro"      "Limbă"                          "Urmează sistemul"
+          add_strings "values-ru"      "Язык"                           "По умолчанию системы"
+          add_strings "values-si"      "භාෂාව"                          "පද්ධතිය අනුගමනය කරන්න"
+          add_strings "values-sk"      "Jazyk"                          "Podľa systému"
+          add_strings "values-sv"      "Språk"                          "Följ system"
+          add_strings "values-th"      "ภาษา"                           "ตามระบบ"
+          add_strings "values-tr"      "Dil"                            "Sistemi takip et"
+          add_strings "values-uk"      "Мова"                           "Слідувати системі"
+          add_strings "values-ur"      "زبان"                           "سسٹم کی پیروی کریں"
+          add_strings "values-vi"      "Ngôn ngữ"                       "Theo hệ thống"
+          add_strings "values-zh"      "语言"                            "跟随系统"
+          add_strings "values-zh-rCN"  "语言"                            "跟随系统"
+          add_strings "values-zh-rHK"  "語言"                            "跟隨系統"
+          add_strings "values-zh-rTW"  "語言"                            "跟隨系統"
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manager/src/main/res/values*/strings.xml
+          git diff --staged --quiet || git commit -m "feat: add settings_language strings to all locales"
+          git push
