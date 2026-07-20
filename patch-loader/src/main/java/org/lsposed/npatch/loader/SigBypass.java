@@ -40,6 +40,9 @@ public class SigBypass {
 
     private static final String TAG = "NPatch-SigBypass";
     private static final Map<String, String> signatures = new HashMap<>();
+    private static final int CERT_INPUT_RAW_X509 = 0;
+    private static final int CERT_INPUT_SHA256 = 1;
+    private static final Set<String> moduleCallerPrefixes = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static String cachedOriginalApkPath;
         
     private static String cachedPatchedApkPath;
@@ -54,7 +57,7 @@ public class SigBypass {
     private static boolean seccompRedirectEnabled;
     
     static {
-        moduleCallerPrefixes.add("top.nkbe.npatch.");
+        moduleCallerPrefixes.add("top.lsposed.npatch.");
         moduleCallerPrefixes.add("org.matrix.vector.");
         moduleCallerPrefixes.add("de.robv.android.xposed.");
         moduleCallerPrefixes.add("io.github.libxposed.");

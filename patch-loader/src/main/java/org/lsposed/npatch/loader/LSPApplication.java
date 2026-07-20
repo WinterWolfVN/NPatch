@@ -80,6 +80,31 @@ public class LSPApplication {
             return false;
         }
     }
+    
+    private static void registerModuleCallerPrefixes(ILSPApplicationService service) {
+        if (service == null) return;
+        try {
+            registerModuleCallerPrefixes(service.getLegacyModulesList());
+            registerModuleCallerPrefixes(service.getModulesList());
+        } catch (Throwable e) {
+            Log.w(TAG, "Failed to register module caller prefixes", e);
+        }
+    }
+
+    private static void registerModuleCallerPrefixes(List<Module> modules) {
+        if (modules == null) return;
+        for (Module module : modules) {
+            if (module == null) continue;
+            SigBypass.registerModuleCallerPrefix(module.packageName);
+            if (module.file == null || module.file.moduleClassNames == null) continue;
+            for (String className : module.file.moduleClassNames) {
+                int lastDot = className == null ? -1 : className.lastIndexOf('.');
+                if (lastDot > 0) {
+                    SigBypass.registerModuleCallerPrefix(className.substring(0, lastDot));
+                }
+            }
+        }
+    }
 
     public static void onLoad() throws RemoteException, IOException {
         if (isIsolated()) {
@@ -127,7 +152,8 @@ public class LSPApplication {
                 service = new NeoLocalApplicationService(context);
             }
         }
-
+        
+        registerModuleCallerPrefixes(service);
         disableProfile(context);
         Startup.initXposed(false, ActivityThread.currentProcessName(), context.getApplicationInfo().dataDir, service);
         Startup.bootstrapXposed();
