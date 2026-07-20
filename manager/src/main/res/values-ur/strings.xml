@@ -86,4 +86,6 @@
     <string name="settings_keystore_wrong_alias">غلط عرفی نام</string>
     <string name="settings_keystore_wrong_alias_password">غلط عرفی پاس ورڈ</string>
     <string name="settings_detail_patch_logs">تفصیلی پیچ لاگز</string>
+    <string name="settings_language">زبان</string>
+    <string name="settings_language_system">سسٹم کی پیروی کریں</string>
 </resources>

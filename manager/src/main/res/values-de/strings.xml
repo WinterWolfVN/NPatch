@@ -88,4 +88,6 @@
     <string name="settings_detail_patch_logs">Detaillierte Patch-Protokolle</string>
     <string name="patch_inject_dex">Loader-Index einfügen</string>
     <string name="patch_inject_dex_desc">Für Anwendungen mit isolierten Diensten, wie die Render-Engines von Browsern, aktivieren Sie bitte diese Option, um sicherzustellen, dass sie ordnungsgemäß funktionieren.</string>
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_system">System folgen</string>
 </resources>

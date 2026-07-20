@@ -86,4 +86,6 @@
     <string name="settings_keystore_wrong_alias">Неправилно име на псевдоним</string>
     <string name="settings_keystore_wrong_alias_password">Грешна парола за псевдоним</string>
     <string name="settings_detail_patch_logs">Подробни дневници на кръпките</string>
+    <string name="settings_language">Език</string>
+    <string name="settings_language_system">Следвай системата</string>
 </resources>

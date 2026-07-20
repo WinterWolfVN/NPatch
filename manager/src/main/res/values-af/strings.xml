@@ -88,4 +88,6 @@
     <string name="settings_detail_patch_logs">Detail pleister logs</string>
     <string name="patch_inject_dex">Spuit loader dex</string>
     <string name="patch_inject_dex_desc">Vir toepassings met geïsoleerde dienste, soos die weergawe-enjins van blaaiers, skakel asseblief hierdie opsie aan om te verseker dat hulle behoorlik werk.</string>
+    <string name="settings_language">Taal</string>
+    <string name="settings_language_system">Volg stelsel</string>
 </resources>
