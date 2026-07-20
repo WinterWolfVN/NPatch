@@ -19,6 +19,7 @@ public class PatchConfig {
             boolean useManager,
             boolean debuggable,
             boolean overrideVersionCode,
+            int overrideVersionCodeValue,
             int sigBypassLevel,
             String originalSignature,
             String appComponentFactory,
@@ -30,6 +31,7 @@ public class PatchConfig {
         this.useManager = useManager;
         this.debuggable = debuggable;
         this.overrideVersionCode = overrideVersionCode;
+        this.overrideVersionCodeValue = overrideVersionCodeValue;
         this.sigBypassLevel = sigBypassLevel;
         this.originalSignature = originalSignature;
         this.appComponentFactory = appComponentFactory;
@@ -39,5 +41,8 @@ public class PatchConfig {
         this.newPackage = newPackage;
         this.outputLog = outputLog;
         this.useMicroG = useMicroG;
+
+        this.lspConfig = LSPConfig.instance;
+        this.lspConfig.sigBypassLevel = sigBypassLevel;
     }
 }
