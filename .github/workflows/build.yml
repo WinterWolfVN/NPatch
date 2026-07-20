@@ -5,8 +5,7 @@ on:
   pull_request:
   push:
     branches: [ "open-source" ]
-  merge_group:
-
+  
 jobs:
   build:
     name: 構建
@@ -28,26 +27,21 @@ jobs:
     - name: Fix Submodule
       run: |          
           git submodule sync --recursive          
-          git submodule update --init --force --recursive
-          
+          git submodule update --init --force --recursive          
           echo "Seen"          
           find core/ -name "CMakeLists.txt"
 
     - name: System Port
       run: |
             mkdir -p out/Port1
-
             javac -source 1.8 -target 1.8 \
             -bootclasspath $ANDROID_HOME/platforms/android-34/android.jar \
             -d out/Port1 \
             src/android/os/SharedMemory.java        
-
             $ANDROID_HOME/build-tools/34.0.0/d8 \
             --output out/Port1/output.zip \
             out/Port1/android/os/SharedMemory.class \          
-
             unzip -o out/Port1/output.zip -d out/Port1/
-
             ls -lah out/Port1/classes.dex
 
     - name: System Port File
@@ -57,48 +51,36 @@ jobs:
         path: out/Port1
         retention-days: 7
 
-    - name: 🛡️ Fix Submodule sun.misc
+    - name: Fix Submodule sun.misc
       run: |
-          echo "🔍 Searching in submodules..."          
-          TARGET_FILE=$(find . -name "CompoundEnumeration.java" -path "*/sun/misc/*" | head -n 1)
-          
+          echo "Searching in submodules..."          
+          TARGET_FILE=$(find . -name "CompoundEnumeration.java" -path "*/sun/misc/*" | head -n 1)          
           if [ -n "$TARGET_FILE" ]; then
-            echo "✅ Target found: $TARGET_FILE"
-                        
+            echo "Target found: $TARGET_FILE"                        
             BASE_JAVA_DIR=$(echo "$TARGET_FILE" | sed 's|sun/misc/CompoundEnumeration.java||')
-            NEW_DIR="${BASE_JAVA_DIR}internal/stubs"
-                        
+            NEW_DIR="${BASE_JAVA_DIR}internal/stubs"                      
             mkdir -p "$NEW_DIR"
-            mv "$TARGET_FILE" "$NEW_DIR/"
-                        
-            sed -i 's|package sun.misc;|package internal.stubs;|g' "$NEW_DIR/CompoundEnumeration.java"
-                        
-            echo "🔗 Syncing imports..."
+            mv "$TARGET_FILE" "$NEW_DIR/"                     
+            sed -i 's|package sun.misc;|package internal.stubs;|g' "$NEW_DIR/CompoundEnumeration.java"                        
+            echo "Syncing imports..."
             find . -type f -name "*.java" -exec sed -i 's|import sun.misc.CompoundEnumeration;|import internal.stubs.CompoundEnumeration;|g' {} +
-            find . -type f -name "*.java" -exec sed -i 's|sun.misc.CompoundEnumeration|internal.stubs.CompoundEnumeration|g' {} +
-                        
+            find . -type f -name "*.java" -exec sed -i 's|sun.misc.CompoundEnumeration|internal.stubs.CompoundEnumeration|g' {} +                        
             rm -rf "${BASE_JAVA_DIR}sun"
-            echo "🚀 Submodule fixed successfully!"
+            echo "Submodule fixed successfully!"
           else
-            echo "⚠️ File not found. Check if submodules are checked out correctly."
+            echo "File not found. Check if submodules are checked out correctly."
           fi
 
     - name: Hot-fix sun.net.www in Submodule
       run: |          
-          TARGET_FILE="core/core/src/main/java/org/lsposed/lspd/util/ClassPathURLStreamHandler.java"
-          
+          TARGET_FILE="core/core/src/main/java/org/lsposed/lspd/util/ClassPathURLStreamHandler.java"          
           if [ -f "$TARGET_FILE" ]; then
-            echo "Problem seen"
-                        
-            sed -i 's/sun\.net\.www/sunp\.net\.www/g' "$TARGET_FILE"
-                  
+            echo "Problem seen"                        
+            sed -i 's/sun\.net\.www/sunp\.net\.www/g' "$TARGET_FILE"                  
             STUB_DIR="core/core/src/main/java/sunp/net/www/protocol/jar"
-            mkdir -p "$STUB_DIR"
-                        
-            echo -e "package sunp.net.www;\npublic class ParseUtil { public static String encodePath(String p, boolean b) { return p; } }" > "core/core/src/main/java/sunp/net/www/ParseUtil.java"
-                  
+            mkdir -p "$STUB_DIR"                       
+            echo -e "package sunp.net.www;\npublic class ParseUtil { public static String encodePath(String p, boolean b) { return p; } }" > "core/core/src/main/java/sunp/net/www/ParseUtil.java"                  
             echo -e "package sunp.net.www.protocol.jar;\nimport java.net.URLStreamHandler;\npublic class Handler extends URLStreamHandler { protected java.net.URLConnection openConnection(java.net.URL u) throws java.io.IOException { return null; } }" > "$STUB_DIR/Handler.java"
-
             echo "Successfully patched"
           fi
 
@@ -199,14 +181,14 @@ jobs:
       with:
         name: npatch-release-${{ env.commit }}
         path: out/release/*
-        retention-days: 14
+        retention-days: 21
 
     - name: 上傳 Debug Artifact
       uses: actions/upload-artifact@v5
       with:
         name: npatch-debug-${{ env.commit }}
         path: out/debug/*
-        retention-days: 7
+        retention-days: 21
 
     - name: 上傳 mappings
       uses: actions/upload-artifact@v5
