@@ -43,7 +43,7 @@ class NewPatchViewModel : ViewModel() {
     var newPackageName by mutableStateOf("")
     var debuggable by mutableStateOf(false)
     var overrideVersionCode by mutableStateOf(false)
-    var overrideVersionCodeValue by mutableStateOf(false)
+    var overrideVersionCodeValue by mutableStateOf(0)
     var sigBypassLevel by mutableStateOf(2)
     var injectDex by mutableStateOf(true)
     var injectProvider by mutableStateOf(false)
