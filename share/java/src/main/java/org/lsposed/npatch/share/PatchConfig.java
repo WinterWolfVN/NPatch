@@ -41,9 +41,7 @@ public class PatchConfig {
         this.managerPackageName = Constants.MANAGER_PACKAGE_NAME;
         this.newPackage = newPackage;
         this.outputLog = outputLog;
-        this.useMicroG = useMicroG;
-
-        this.lspConfig = LSPConfig.instance;
+        this.useMicroG = useMicroG;        
         this.lspConfig.sigBypassLevel = sigBypassLevel;
     }
 }
