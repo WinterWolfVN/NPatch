@@ -4,7 +4,8 @@
 
 ## Introduction 
 
-This is a modified version to support older Android versions. 
+This is a modified version to support older Android versions.
+
 Rootless implementation of LSPosed framework, integrating Xposed API by inserting dex and so into the target APK.
 
 We sincerely invite you to join our [Telegram](https://t.me/NPatch) group to get more information and updates about NPatch.
