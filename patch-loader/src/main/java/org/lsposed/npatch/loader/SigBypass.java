@@ -210,11 +210,11 @@ public class SigBypass {
 
     static void doSigBypass(Context context, int sigBypassLevel) throws IOException {
         // Level 1: Java PMS Hook
-        if (sigBypassLevel >= Constants.SIGBYPASS_LV_PM) {
+        if (sigBypassLevel >= Constants.SIGBYPASS_BASIC) {
             hookPackageParser(context);
             proxyPackageInfoCreator(context);
-        }
-        if (sigBypassLevel >= Constants.SIGBYPASS_LV_PM_OPENAT) {
+        }     
+        if (sigBypassLevel >= Constants.SIGBYPASS_HIGH) {
             String currentApkPath = context.getPackageResourcePath();
             cachedOriginalApkPath = extractOriginalApk(context);
 
@@ -229,7 +229,7 @@ public class SigBypass {
                 );
 
                 // Level 3: SVC (Seccomp) Hook
-                if (sigBypassLevel >= Constants.SIGBYPASS_LV_SVC) {
+                if (sigBypassLevel >= Constants.SIGBYPASS_EXTREME) {
                     if (SvcBypass.initSvcHook()) {
                         SvcBypass.enableSvcRedirect(
                                 currentApkPath,
@@ -241,6 +241,21 @@ public class SigBypass {
                         XLog.w(TAG, "SVC Hook failed to init");
                     }
                 }
+                if (sigBypassLevel == Constants.SIGBYPASS_SECCOMP && cachedOriginalApkPath != null) {
+            if (!isSeccompRuntimeSupported()) {
+                XLog.w(TAG, "Seccomp skipped on non-arm64 runtime ABI");
+            } else if (FunPatch.enableSeccompV2Redirect(
+                        currentApkPath,
+                        cachedOriginalApkPath,
+                        context.getPackageName()
+                )) {
+                if (!seccompRedirectEnabled) {
+                    XLog.i(TAG, "Seccomp enabled");
+                }
+                seccompRedirectEnabled = true;
+            } else {
+                XLog.w(TAG, "Seccomp failed to init");
+            }
             }
         }
     }
