@@ -79,30 +79,15 @@ public class SigBypass {
         return isModuleCaller();
     }
     
-    private static Signature getOriginalSignature(String packageName) {
-        String replacement = signatures.get(packageName);
-        if (replacement == null || replacement.isEmpty()) return null;
-        try {
-            return new Signature(replacement);
-        } catch (Throwable e) {
-            Log.w(TAG, "fail to construct original signature for " + packageName, e);
-            return null;
-        }
-    }
-    
-    private static boolean matchesOriginalCertificate(Signature signature, byte[] certificate, int type) {
-        if (signature == null || certificate == null) return false;
-        try {
-            byte[] raw = signature.toByteArray();
-            if (type == CERT_INPUT_RAW_X509) {
-                return MessageDigest.isEqual(raw, certificate);
+    private static boolean isModuleCaller() {
+        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        for (StackTraceElement element : stack) {
+            String className = element.getClassName();
+            for (String prefix : moduleCallerPrefixes) {
+                if (className.startsWith(prefix)) {
+                    return true;
+                }
             }
-            if (type == CERT_INPUT_SHA256) {
-                byte[] digest = MessageDigest.getInstance("SHA-256").digest(raw);
-                return MessageDigest.isEqual(digest, certificate);
-            }
-        } catch (Throwable e) {
-            Log.w(TAG, "fail to compare signature certificate", e);
         }
         return false;
     }
@@ -123,14 +108,7 @@ public class SigBypass {
         }
         return false;
     }
-
-    private static String visibleApkPathForCaller() {
-        if (isModuleCaller() && cachedPatchedApkPath != null) {
-            return cachedPatchedApkPath;
-        }
-        return cachedOriginalApkPath != null ? cachedOriginalApkPath : cachedPatchedApkPath;
-    }
-
+    
     private static void replaceSignature(Context context, PackageInfo packageInfo) {
         boolean hasSignature = (packageInfo.signatures != null && packageInfo.signatures.length != 0) || packageInfo.signingInfo != null;
         if (hasSignature) {
@@ -169,18 +147,35 @@ public class SigBypass {
             }
         }
     }
-
-    private static void hookPackageParser(Context context) {
-        XposedBridge.hookAllMethods(PackageParser.class, "generatePackageInfo", new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) {
-                var packageInfo = (PackageInfo) param.getResult();
-                if (packageInfo == null) return;
-                replaceSignature(context, packageInfo);
-            }
-        });
+  
+    private static Signature getOriginalSignature(String packageName) {
+        String replacement = signatures.get(packageName);
+        if (replacement == null || replacement.isEmpty()) return null;
+        try {
+            return new Signature(replacement);
+        } catch (Throwable e) {
+            Log.w(TAG, "fail to construct original signature for " + packageName, e);
+            return null;
+        }
     }
-
+    
+    private static boolean matchesOriginalCertificate(Signature signature, byte[] certificate, int type) {
+        if (signature == null || certificate == null) return false;
+        try {
+            byte[] raw = signature.toByteArray();
+            if (type == CERT_INPUT_RAW_X509) {
+                return MessageDigest.isEqual(raw, certificate);
+            }
+            if (type == CERT_INPUT_SHA256) {
+                byte[] digest = MessageDigest.getInstance("SHA-256").digest(raw);
+                return MessageDigest.isEqual(digest, certificate);
+            }
+        } catch (Throwable e) {
+            Log.w(TAG, "fail to compare signature certificate", e);
+        }
+        return false;
+    }
+    
     private static void proxyPackageInfoCreator(Context context) {
         Parcelable.Creator<PackageInfo> originalCreator = PackageInfo.CREATOR;
         Parcelable.Creator<PackageInfo> proxiedCreator = new Parcelable.Creator<>() {
@@ -212,7 +207,43 @@ public class SigBypass {
             Log.w(TAG, "fail to clear Parcel.sPairedCreators", e);
         }
     }
+      
 
+    private static String visibleApkPathForCaller() {
+        if (isModuleCaller() && cachedPatchedApkPath != null) {
+            return cachedPatchedApkPath;
+        }
+        return cachedOriginalApkPath != null ? cachedOriginalApkPath : cachedPatchedApkPath;
+    } 
+    
+    private static void hookPackageParser(Context context) {
+        XposedBridge.hookAllMethods(PackageParser.class, "generatePackageInfo", new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) {
+                var packageInfo = (PackageInfo) param.getResult();
+                if (packageInfo == null) return;
+                replaceSignature(context, packageInfo);
+            }
+        });
+    }
+
+    private static void hookPackageInfoConstructor(Context context) {
+        if (packageInfoConstructorHooked) return;
+        try {
+            XposedHelpers.findAndHookConstructor(PackageInfo.class, Parcel.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) {
+                    if (!(param.thisObject instanceof PackageInfo packageInfo)) return;
+                    replaceSignature(context, packageInfo);
+                }
+            });
+            packageInfoConstructorHooked = true;
+        } catch (Throwable e) {
+            Log.w(TAG, "fail to hook PackageInfo(Parcel), fallback to CREATOR proxy", e);
+            proxyPackageInfoCreator(context);
+        }
+    }
+    
     public static void replaceApplication(String packageName, String sourceDir, String resourcesDir) throws IOException {
         try {
             Log.i(TAG, "Start Replace application info for `" + packageName + "`");
@@ -238,54 +269,6 @@ public class SigBypass {
             });
         } catch (Throwable e) {
             Log.w(TAG, "fail to replace getApplicationInfo", e);
-        }
-    }
-
-    private static String extractOriginalApk(Context context) {
-        File cacheDir = new File(context.getCacheDir(), "npatch/origin");
-        if (!cacheDir.exists()) cacheDir.mkdirs();
-
-        try (ZipFile sourceFile = new ZipFile(context.getPackageResourcePath())) {
-            ZipEntry entry = sourceFile.getEntry(ORIGINAL_APK_ASSET_PATH);
-            if (entry == null) {
-                Log.e(TAG, "Original APK not found in assets!");
-                return null;
-            }
-
-            File targetFile = new File(cacheDir, entry.getCrc() + ".apk");
-            if (targetFile.exists() && targetFile.length() == entry.getSize()) {
-                return targetFile.getAbsolutePath();
-            }
-
-            try (InputStream is = sourceFile.getInputStream(entry);
-                 FileOutputStream fos = new FileOutputStream(targetFile)) {
-                byte[] buffer = new byte[8192];
-                int length;
-                while ((length = is.read(buffer)) > 0) {
-                    fos.write(buffer, 0, length);
-                }
-            }
-            return targetFile.getAbsolutePath();
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to extract original APK", e);
-            return null;
-        }
-    }
-    
-    private static void hookPackageInfoConstructor(Context context) {
-        if (packageInfoConstructorHooked) return;
-        try {
-            XposedHelpers.findAndHookConstructor(PackageInfo.class, Parcel.class, new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) {
-                    if (!(param.thisObject instanceof PackageInfo packageInfo)) return;
-                    replaceSignature(context, packageInfo);
-                }
-            });
-            packageInfoConstructorHooked = true;
-        } catch (Throwable e) {
-            Log.w(TAG, "fail to hook PackageInfo(Parcel), fallback to CREATOR proxy", e);
-            proxyPackageInfoCreator(context);
         }
     }
     
@@ -368,6 +351,37 @@ public class SigBypass {
         try {
             XposedBridge.hookAllMethods(clazz, "getPackageArchiveInfo", hook);
         } catch (NoSuchMethodError ignored) {
+        }
+    }
+
+    private static String extractOriginalApk(Context context) {
+        File cacheDir = new File(context.getCacheDir(), "npatch/origin");
+        if (!cacheDir.exists()) cacheDir.mkdirs();
+
+        try (ZipFile sourceFile = new ZipFile(context.getPackageResourcePath())) {
+            ZipEntry entry = sourceFile.getEntry(ORIGINAL_APK_ASSET_PATH);
+            if (entry == null) {
+                Log.e(TAG, "Original APK not found in assets!");
+                return null;
+            }
+
+            File targetFile = new File(cacheDir, entry.getCrc() + ".apk");
+            if (targetFile.exists() && targetFile.length() == entry.getSize()) {
+                return targetFile.getAbsolutePath();
+            }
+
+            try (InputStream is = sourceFile.getInputStream(entry);
+                 FileOutputStream fos = new FileOutputStream(targetFile)) {
+                byte[] buffer = new byte[8192];
+                int length;
+                while ((length = is.read(buffer)) > 0) {
+                    fos.write(buffer, 0, length);
+                }
+            }
+            return targetFile.getAbsolutePath();
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to extract original APK", e);
+            return null;
         }
     }
 
