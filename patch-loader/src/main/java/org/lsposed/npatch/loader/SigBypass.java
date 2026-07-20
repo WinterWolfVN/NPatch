@@ -41,8 +41,7 @@ public class SigBypass {
     private static final String TAG = "NPatch-SigBypass";
     private static final Map<String, String> signatures = new HashMap<>();
     private static String cachedOriginalApkPath;
-    
-    private static String cachedOriginalApkPath;
+        
     private static String cachedPatchedApkPath;
     private static int activeSigBypassLevel;
     private static boolean packageInfoConstructorHooked;
@@ -249,22 +248,7 @@ public class SigBypass {
             hookPackageInfoConstructor(context);
         }
 
-        if (sigBypassLevel == Constants.SIGBYPASS_SECCOMP && cachedOriginalApkPath != null) {
-            if (!isSeccompRuntimeSupported()) {
-                XLog.w(TAG, "Seccomp skipped on non-arm64 runtime ABI");
-            } else if (FunPatch.enableSeccompV2Redirect(
-                        currentApkPath,
-                        cachedOriginalApkPath,
-                        context.getPackageName()
-                )) {
-                if (!seccompRedirectEnabled) {
-                    XLog.i(TAG, "Seccomp enabled");
-                }
-                seccompRedirectEnabled = true;
-            } else {
-                XLog.w(TAG, "Seccomp failed to init");
-            }
-        } else if (sigBypassLevel >= Constants.SIGBYPASS_BASIC && cachedOriginalApkPath == null) {
+        if (sigBypassLevel >= Constants.SIGBYPASS_BASIC && cachedOriginalApkPath == null) {
             XLog.w(TAG, "Original APK unavailable, native signature bypass disabled");
         }
     }
