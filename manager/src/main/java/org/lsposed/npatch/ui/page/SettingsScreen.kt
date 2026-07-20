@@ -324,31 +324,32 @@ private fun Language() {
         }?.value ?: systemDefault
     }
 
-    AnywhereDropdown(
-        expanded = expanded,
-        onDismissRequest = { expanded = false },
-        onClick = { expanded = true },
-        surface = {
-            SettingsItem(
-                icon = Icons.Outlined.Language,
-                title = stringResource(R.string.settings_language),
-                desc = currentLabel
-            )
-        }
-    ) {
-        languages.forEach { (tag, name) ->
-            DropdownMenuItem(
-                text = { Text(name) },
-                onClick = {
-                    val localeList = if (tag.isEmpty()) {
-                        LocaleListCompat.getEmptyLocaleList()
-                    } else {
-                        LocaleListCompat.forLanguageTags(tag)
+    Box {
+        SettingsItem(
+            icon = Icons.Outlined.Language,
+            title = stringResource(R.string.settings_language),
+            desc = currentLabel,
+            modifier = Modifier.clickable { expanded = true }
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.heightIn(max = 320.dp)
+        ) {
+            languages.forEach { (tag, name) ->
+                DropdownMenuItem(
+                    text = { Text(name) },
+                    onClick = {
+                        val localeList = if (tag.isEmpty()) {
+                            LocaleListCompat.getEmptyLocaleList()
+                        } else {
+                            LocaleListCompat.forLanguageTags(tag)
+                        }
+                        AppCompatDelegate.setApplicationLocales(localeList)
+                        expanded = false
                     }
-                    AppCompatDelegate.setApplicationLocales(localeList)
-                    expanded = false
-                }
-            )
+                )
+            }
         }
     }
 }
