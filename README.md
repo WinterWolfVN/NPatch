@@ -4,19 +4,20 @@
 
 ## Introduction 
 
+This is a modified version to support older Android versions. 
 Rootless implementation of LSPosed framework, integrating Xposed API by inserting dex and so into the target APK.
 
 We sincerely invite you to join our [Telegram](https://t.me/NPatch) group to get more information and updates about NPatch.
 
 ## Supported Versions
 
-- Min: Android 8.1
+- Min: Android 7
 - Max: In theory, same with [JingMatrix/LSPosed](https://github.com/JingMatrix/LSPosed#supported-versions)
 
 ## Download
 
-For stable releases, please go to [Github Releases page](https://github.com/7723mod/NPatch/releases)
-For canary build, please check [Github Actions](https://github.com/7723mod/NPatch/actions)
+For stable releases, please go to [Github Releases page](https://github.com/WinterWolfVN/NPatch/releases)
+For canary build, please check [Github Actions](https://github.com/WinterWolfVN/NPatch/actions)
 Note: debug builds are only available in Github Actions
 
 ## Usage
@@ -28,11 +29,6 @@ Note: debug builds are only available in Github Actions
 + Through manager
 1. Download and install `manager.apk` on an Android device
 1. Follow the instructions of the manager app
-
-
-## Star Number
-
-[![Star History Chart](https://api.star-history.com/svg?repos=7723mod/NPatch&type=Date)](https://star-history.com/#7723mod/NPatch&Date)
 
 ## Translation Contributing
 
