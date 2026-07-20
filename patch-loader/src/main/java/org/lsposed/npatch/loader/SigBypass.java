@@ -52,6 +52,76 @@ public class SigBypass {
     private static boolean javaIoHooked;
     private static boolean nativeOpenatEnabled;
     private static boolean seccompRedirectEnabled;
+    
+    static {
+        moduleCallerPrefixes.add("top.nkbe.npatch.");
+        moduleCallerPrefixes.add("org.matrix.vector.");
+        moduleCallerPrefixes.add("de.robv.android.xposed.");
+        moduleCallerPrefixes.add("io.github.libxposed.");
+        moduleCallerPrefixes.add("org.lsposed.");
+    }
+
+    public static void registerModuleCallerPrefix(String prefix) {
+        if (prefix != null && !prefix.isEmpty()) {
+            moduleCallerPrefixes.add(prefix);
+        }
+    }
+
+    static boolean isModuleCallerForCompat() {
+        return isModuleCaller();
+    }
+    
+    private static Signature getOriginalSignature(String packageName) {
+        String replacement = signatures.get(packageName);
+        if (replacement == null || replacement.isEmpty()) return null;
+        try {
+            return new Signature(replacement);
+        } catch (Throwable e) {
+            Log.w(TAG, "fail to construct original signature for " + packageName, e);
+            return null;
+        }
+    }
+    
+    private static boolean matchesOriginalCertificate(Signature signature, byte[] certificate, int type) {
+        if (signature == null || certificate == null) return false;
+        try {
+            byte[] raw = signature.toByteArray();
+            if (type == CERT_INPUT_RAW_X509) {
+                return MessageDigest.isEqual(raw, certificate);
+            }
+            if (type == CERT_INPUT_SHA256) {
+                byte[] digest = MessageDigest.getInstance("SHA-256").digest(raw);
+                return MessageDigest.isEqual(digest, certificate);
+            }
+        } catch (Throwable e) {
+            Log.w(TAG, "fail to compare signature certificate", e);
+        }
+        return false;
+    }
+    
+    private static boolean isSignatureSensitiveCaller() {
+        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        for (StackTraceElement element : stack) {
+            String className = element.getClassName();
+            if (className.startsWith("android.content.pm.PackageParser")
+                    || className.startsWith("android.content.pm.parsing.")
+                    || className.startsWith("android.util.apk.")
+                    || className.startsWith("java.util.jar.")
+                    || className.startsWith("sun.security.pkcs.")
+                    || className.startsWith("sun.security.util.")
+                    || className.startsWith("org.apache.harmony.security.")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String visibleApkPathForCaller() {
+        if (isModuleCaller() && cachedPatchedApkPath != null) {
+            return cachedPatchedApkPath;
+        }
+        return cachedOriginalApkPath != null ? cachedOriginalApkPath : cachedPatchedApkPath;
+    }
 
     private static void replaceSignature(Context context, PackageInfo packageInfo) {
         boolean hasSignature = (packageInfo.signatures != null && packageInfo.signatures.length != 0) || packageInfo.signingInfo != null;
