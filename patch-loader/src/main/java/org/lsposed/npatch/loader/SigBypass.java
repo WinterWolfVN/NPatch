@@ -209,39 +209,35 @@ public class SigBypass {
     }
 
     static void doSigBypass(Context context, int sigBypassLevel) throws IOException {
-        // Level 1: Java PMS Hook
-        if (sigBypassLevel >= Constants.SIGBYPASS_BASIC) {
-            hookPackageParser(context);
-            proxyPackageInfoCreator(context);
-        }     
-        if (sigBypassLevel >= Constants.SIGBYPASS_HIGH) {
-            String currentApkPath = context.getPackageResourcePath();
+        activeSigBypassLevel = Math.max(activeSigBypassLevel, sigBypassLevel);
+        String currentApkPath = cachedPatchedApkPath != null ? cachedPatchedApkPath : context.getPackageResourcePath();
+        if (sigBypassLevel >= Constants.SIGBYPASS_BASIC && cachedOriginalApkPath == null) {
             cachedOriginalApkPath = extractOriginalApk(context);
+        }
 
-            if (cachedOriginalApkPath != null) {
-                // 1. Java Core stability
-                hookJavaIO(currentApkPath, cachedOriginalApkPath);
-                // 2. Native OpenAt Hook
-                org.lsposed.lspd.nativebridge.SigBypass.enableOpenatHook(
-                        currentApkPath,
-                        cachedOriginalApkPath,
-                        context.getPackageName()
-                );
+        if (sigBypassLevel >= Constants.SIGBYPASS_BASIC && cachedOriginalApkPath != null) {
+            hookJavaIO(currentApkPath, cachedOriginalApkPath);
+            org.lsposed.lspd.nativebridge.SigBypass.enableOpenatHook(
+                    currentApkPath,
+                    cachedOriginalApkPath,
+                    context.getPackageName()
+            );
+            if (!nativeOpenatEnabled) {
+                nativeOpenatEnabled = true;
+            }
+        }
 
-                // Level 3: SVC (Seccomp) Hook
-                if (sigBypassLevel >= Constants.SIGBYPASS_EXTREME) {
-                    if (SvcBypass.initSvcHook()) {
-                        SvcBypass.enableSvcRedirect(
-                                currentApkPath,
-                                cachedOriginalApkPath,
-                                context.getPackageName()
-                        );
-                        XLog.i(TAG, "SVC Hook enabled");
-                    } else {
-                        XLog.w(TAG, "SVC Hook failed to init");
-                    }
-                }
-                if (sigBypassLevel == Constants.SIGBYPASS_SECCOMP && cachedOriginalApkPath != null) {
+        if (sigBypassLevel >= Constants.SIGBYPASS_HIGH) {
+            proxyPackageInfoCreator(context);
+            hookPackageArchiveInfo(context);
+            hookHasSigningCertificate(context);
+        }
+
+        if (sigBypassLevel == Constants.SIGBYPASS_EXTREME) {
+            hookPackageInfoConstructor(context);
+        }
+
+        if (sigBypassLevel == Constants.SIGBYPASS_SECCOMP && cachedOriginalApkPath != null) {
             if (!isSeccompRuntimeSupported()) {
                 XLog.w(TAG, "Seccomp skipped on non-arm64 runtime ABI");
             } else if (FunPatch.enableSeccompV2Redirect(
@@ -256,7 +252,8 @@ public class SigBypass {
             } else {
                 XLog.w(TAG, "Seccomp failed to init");
             }
-            }
+        } else if (sigBypassLevel >= Constants.SIGBYPASS_BASIC && cachedOriginalApkPath == null) {
+            XLog.w(TAG, "Original APK unavailable, native signature bypass disabled");
         }
     }
 }
