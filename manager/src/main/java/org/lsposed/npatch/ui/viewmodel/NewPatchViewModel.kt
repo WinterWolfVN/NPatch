@@ -43,8 +43,9 @@ class NewPatchViewModel : ViewModel() {
     var newPackageName by mutableStateOf("")
     var debuggable by mutableStateOf(false)
     var overrideVersionCode by mutableStateOf(false)
+    var overrideVersionCodeValue by mutableStateOf(false)
     var sigBypassLevel by mutableStateOf(2)
-    var injectDex by mutableStateOf(false)
+    var injectDex by mutableStateOf(true)
     var injectProvider by mutableStateOf(false)
     var outputLog by mutableStateOf(true)
     var useMicroG by mutableStateOf(false)
@@ -98,17 +99,29 @@ class NewPatchViewModel : ViewModel() {
     }
 
     private fun submitPatch() {
-        Log.d(TAG, "Submit Patch")
-        if (useManager) embeddedModules = emptyList()
-        val config = PatchConfig(useManager, debuggable, overrideVersionCode, sigBypassLevel, null, null, injectProvider, outputLog, newPackageName, useMicroG)
-        patchOptions = Patcher.Options(
-            newPackageName = newPackageName,
-            injectDex = injectDex,
-            config = config,
-            apkPaths = listOf(patchApp.app.sourceDir) + (patchApp.app.splitSourceDirs ?: emptyArray()),
-            embeddedModules = embeddedModules.flatMap { listOf(it.app.sourceDir) + (it.app.splitSourceDirs ?: emptyArray()) }
-        )
-        patchState = PatchState.PATCHING
+    Log.d(TAG, "Submit Patch")
+    if (useManager) embeddedModules = emptyList()
+    val config = PatchConfig(
+        useManager,
+        debuggable,
+        overrideVersionCode,
+        overrideVersionCodeValue,
+        sigBypassLevel,
+        null,
+        null,
+        injectProvider,
+        outputLog,
+        newPackageName,
+        useMicroG
+    )
+    patchOptions = Patcher.Options(
+        newPackageName = newPackageName,
+        injectDex = injectDex,
+        config = config,
+        apkPaths = listOf(patchApp.app.sourceDir) + (patchApp.app.splitSourceDirs ?: emptyArray()),
+        embeddedModules = embeddedModules.flatMap { listOf(it.app.sourceDir) + (it.app.splitSourceDirs ?: emptyArray()) }
+    )
+    patchState = PatchState.PATCHING
     }
 
     private suspend fun launchPatch() {
