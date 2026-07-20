@@ -41,6 +41,7 @@ public class SigBypass {
     private static final String TAG = "NPatch-SigBypass";
     private static final Map<String, String> signatures = new HashMap<>();
     private static String cachedOriginalApkPath;
+    private static int activeSigBypassLevel;
 
     private static void replaceSignature(Context context, PackageInfo packageInfo) {
         boolean hasSignature = (packageInfo.signatures != null && packageInfo.signatures.length != 0) || packageInfo.signingInfo != null;
