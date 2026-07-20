@@ -193,6 +193,105 @@ public class SigBypass {
             return null;
         }
     }
+    
+    private static void hookPackageInfoConstructor(Context context) {
+        if (packageInfoConstructorHooked) return;
+        try {
+            XposedHelpers.findAndHookConstructor(PackageInfo.class, Parcel.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) {
+                    if (!(param.thisObject instanceof PackageInfo packageInfo)) return;
+                    replaceSignature(context, packageInfo);
+                }
+            });
+            packageInfoConstructorHooked = true;
+        } catch (Throwable e) {
+            Log.w(TAG, "fail to hook PackageInfo(Parcel), fallback to CREATOR proxy", e);
+            proxyPackageInfoCreator(context);
+        }
+    }
+    
+    private static void hookPackageArchiveInfo(Context context) {
+        if (packageArchiveInfoHooked) return;
+        try {
+            XC_MethodHook hook = new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) {
+                    if (cachedOriginalApkPath == null) return;
+                    Object apkPath = param.args.length == 0 ? null : param.args[0];
+                    if (!(apkPath instanceof String path) || !path.equals(cachedPatchedApkPath)) {
+                        return;
+                    }
+                    if (isModuleCaller()) {
+                        return;
+                    }
+                    param.args[0] = cachedOriginalApkPath;
+                }
+
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) {
+                    PackageInfo packageInfo = (PackageInfo) param.getResult();
+                    if (packageInfo == null) return;
+                    replaceSignature(context, packageInfo);
+                }
+            };
+            hookPackageArchiveInfoMethods(PackageManager.class, hook);
+            try {
+                hookPackageArchiveInfoMethods(Class.forName("android.app.ApplicationPackageManager"), hook);
+            } catch (Throwable ignored) {
+            }
+            packageArchiveInfoHooked = true;
+        } catch (Throwable e) {
+            Log.w(TAG, "fail to replace getPackageArchiveInfo", e);
+        }
+    }
+    
+    private static void hookHasSigningCertificate(Context context) {
+        if (hasSigningCertificateHooked) return;
+        try {
+            XC_MethodHook hook = new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) {
+                    if (isModuleCaller()) return;
+                    if (param.args.length < 3) return;
+                    Object packageNameArg = param.args[0];
+                    Object certificateArg = param.args[1];
+                    Object typeArg = param.args[2];
+                    if (!(certificateArg instanceof byte[] certificate)
+                            || !(typeArg instanceof Integer type)) {
+                        return;
+                    }
+                    String packageName = null;
+                    if (packageNameArg instanceof String str) {
+                        packageName = str;
+                    } else if (packageNameArg instanceof Integer uid && uid == Process.myUid()) {
+                        packageName = context.getPackageName();
+                    }
+                    if (packageName == null) return;
+                    Signature originalSignature = getOriginalSignature(packageName);
+                    if (originalSignature == null) return;
+                    if (matchesOriginalCertificate(originalSignature, certificate, type)) {
+                        param.setResult(true);
+                    }
+                }
+            };
+            XposedBridge.hookAllMethods(PackageManager.class, "hasSigningCertificate", hook);
+            try {
+                XposedBridge.hookAllMethods(Class.forName("android.app.ApplicationPackageManager"), "hasSigningCertificate", hook);
+            } catch (Throwable ignored) {
+            }
+            hasSigningCertificateHooked = true;
+        } catch (Throwable e) {
+            Log.w(TAG, "fail to hook hasSigningCertificate", e);
+        }
+    }
+ 
+    private static void hookPackageArchiveInfoMethods(Class<?> clazz, XC_MethodHook hook) {
+        try {
+            XposedBridge.hookAllMethods(clazz, "getPackageArchiveInfo", hook);
+        } catch (NoSuchMethodError ignored) {
+        }
+    }
 
     private static void hookJavaIO(String currentApkPath, String originalApkPath) {
         XC_MethodHook redirectHook = new XC_MethodHook() {
