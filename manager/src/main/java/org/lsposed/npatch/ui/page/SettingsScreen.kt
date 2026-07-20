@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Ballot
 import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -35,6 +36,8 @@ import org.lsposed.npatch.ui.component.CenterTopBar
 import org.lsposed.npatch.ui.component.settings.SettingsItem
 import org.lsposed.npatch.ui.component.settings.SettingsSwitch
 import org.lsposed.npatch.ui.util.LocalSnackbarHost
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import java.io.IOException
 import java.security.GeneralSecurityException
 import java.security.KeyStore
@@ -55,6 +58,7 @@ fun SettingsScreen() {
                 .padding(vertical = 16.dp)
         ) {
             KeyStore()
+            Language()
             DetailPatchLogs()
             StorageDirectory()
         }
@@ -248,6 +252,104 @@ private fun KeyStore() {
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun Language() {
+    val systemDefault = stringResource(R.string.settings_language_system)
+    val languages = remember(systemDefault) {
+        linkedMapOf(
+            "" to systemDefault,
+            "af" to "Afrikaans",
+            "ar" to "العربية",
+            "bg" to "Български",
+            "bn" to "বাংলা",
+            "ca" to "Català",
+            "cs" to "Čeština",
+            "da" to "Dansk",
+            "de" to "Deutsch",
+            "el" to "Ελληνικά",
+            "en" to "English",
+            "es" to "Español",
+            "et" to "Eesti",
+            "fa" to "فارسی",
+            "fi" to "Suomi",
+            "fr" to "Français",
+            "hi" to "हिन्दी",
+            "hr" to "Hrvatski",
+            "hu" to "Magyar",
+            "in" to "Bahasa Indonesia",
+            "it" to "Italiano",
+            "iw" to "עברית",
+            "ja" to "日本語",
+            "ko" to "한국어",
+            "ku" to "Kurdî",
+            "lt" to "Lietuvių",
+            "nl" to "Nederlands",
+            "no" to "Norsk",
+            "pl" to "Polski",
+            "pt" to "Português",
+            "pt-BR" to "Português (Brasil)",
+            "ro" to "Română",
+            "ru" to "Русский",
+            "si" to "සිංහල",
+            "sk" to "Slovenčina",
+            "sv" to "Svenska",
+            "th" to "ภาษาไทย",
+            "tr" to "Türkçe",
+            "uk" to "Українська",
+            "ur" to "اردو",
+            "vi" to "Tiếng Việt",
+            "zh-CN" to "简体中文",
+            "zh-HK" to "中文 (香港)",
+            "zh-TW" to "繁體中文",
+        )
+    }
+
+    var expanded by remember { mutableStateOf(false) }
+
+    val currentTag by remember {
+        derivedStateOf {
+            AppCompatDelegate.getApplicationLocales()
+                .toLanguageTags()
+                .takeIf { it.isNotEmpty() && it != "und" }
+                ?: ""
+        }
+    }
+
+    val currentLabel = remember(currentTag, systemDefault) {
+        languages.entries.firstOrNull { (tag, _) ->
+            tag.isNotEmpty() && currentTag.startsWith(tag)
+        }?.value ?: systemDefault
+    }
+
+    AnywhereDropdown(
+        expanded = expanded,
+        onDismissRequest = { expanded = false },
+        onClick = { expanded = true },
+        surface = {
+            SettingsItem(
+                icon = Icons.Outlined.Language,
+                title = stringResource(R.string.settings_language),
+                desc = currentLabel
+            )
+        }
+    ) {
+        languages.forEach { (tag, name) ->
+            DropdownMenuItem(
+                text = { Text(name) },
+                onClick = {
+                    val localeList = if (tag.isEmpty()) {
+                        LocaleListCompat.getEmptyLocaleList()
+                    } else {
+                        LocaleListCompat.forLanguageTags(tag)
+                    }
+                    AppCompatDelegate.setApplicationLocales(localeList)
+                    expanded = false
+                }
+            )
+        }
     }
 }
 
