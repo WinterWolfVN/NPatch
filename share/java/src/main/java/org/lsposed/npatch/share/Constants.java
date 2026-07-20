@@ -7,8 +7,7 @@ public class Constants {
     final static public String META_LOADER_DEX_ASSET_PATH = "assets/npatch/metaloader.dex";
     final static public String PROVIDER_DEX_ASSET_PATH = "assets/npatch/mtprovider.dex";
     final static public String ORIGINAL_APK_ASSET_PATH = "assets/npatch/origin.apk";
-    final static public String EMBEDDED_MODULES_ASSET_PATH = "assets/npatch/modules/";
-    final static public String APPCOMPONENTFACTORY_DEX_ASSET_PATH = "assets/npatch/APIPort.dex";
+    final static public String EMBEDDED_MODULES_ASSET_PATH = "assets/npatch/modules/";    
 
     final static public String PATCH_FILE_SUFFIX = "-npatched.apk";
     final static public String PROXY_APP_COMPONENT_FACTORY = "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub";
@@ -16,8 +15,9 @@ public class Constants {
     final static public String REAL_GMS_PACKAGE_NAME = "com.google.android.gms";
     final static public int MIN_ROLLING_VERSION_CODE = 400;
 
-    final static public int SIGBYPASS_LV_DISABLE = 0;
-    final static public int SIGBYPASS_LV_PM = 1;
-    final static public int SIGBYPASS_LV_PM_OPENAT = 2;
-    final static public int SIGBYPASS_LV_SVC = 3;
+    final static public int SIGBYPASS_NONE = 0;
+    final static public int SIGBYPASS_BASIC = 1;
+    final static public int SIGBYPASS_HIGH = 2;
+    final static public int SIGBYPASS_EXTREME = 3;
+    final static public int SIGBYPASS_SECCOMP = 4;
 }
