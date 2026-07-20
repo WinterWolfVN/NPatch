@@ -336,8 +336,8 @@ private fun Language() {
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.heightIn(max = 320.dp)
-            offset = DpOffset(x = 200, y = 0.dp)
+            modifier = Modifier.heightIn(max = 320.dp),
+            offset = DpOffset(x = 200.dp, y = 0.dp)
         ) {
             languages.forEach { (tag, name) ->
                 DropdownMenuItem(
