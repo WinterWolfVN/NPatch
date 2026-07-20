@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.DpOffset
 import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.coroutines.launch
 import org.lsposed.npatch.R
@@ -306,6 +307,7 @@ private fun Language() {
             "zh-TW" to "繁體中文",
         )
     }
+    
 
     var expanded by remember { mutableStateOf(false) }
 
@@ -335,6 +337,7 @@ private fun Language() {
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.heightIn(max = 320.dp)
+            offset = DpOffset(x = 200, y = 0.dp)
         ) {
             languages.forEach { (tag, name) ->
                 DropdownMenuItem(
