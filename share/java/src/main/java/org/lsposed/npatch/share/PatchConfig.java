@@ -8,6 +8,7 @@ public class PatchConfig {
     public final boolean injectProvider;
     public final boolean outputLog;
     public final int sigBypassLevel;
+    public final int overrideVersionCodeValue;
     public final String originalSignature;
     public final String appComponentFactory;
     public final LSPConfig lspConfig;
