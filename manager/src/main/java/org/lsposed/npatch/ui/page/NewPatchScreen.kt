@@ -95,7 +95,7 @@ fun NewPatchScreen(
             return@rememberLauncherForActivityResult
         }
         scope.launch {
-            NPackageManager.getAppInfoFromApks(apks)
+            NPackageManager.getAppInfoFromApks(NPackageManager.extractApksIfNeeded(apks))
                 .onSuccess {
                     viewModel.dispatch(ViewAction.ConfigurePatch(it.first()))
                 }
@@ -146,7 +146,7 @@ fun NewPatchScreen(
                     ACTION_INTENT_INSTALL -> {
                         data?.let { uri ->
                             scope.launch {
-                                NPackageManager.getAppInfoFromApks(listOf(uri)).onSuccess {
+                                NPackageManager.getAppInfoFromApks(NPackageManager.extractApksIfNeeded(listOf(uri))).onSuccess {
                                     viewModel.dispatch(ViewAction.ConfigurePatch(it.first()))
                                 }.onFailure {
                                     snackbarHost.showSnackbar(it.message ?: errorUnknown)
