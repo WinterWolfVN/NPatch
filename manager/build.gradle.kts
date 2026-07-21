@@ -32,7 +32,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false      // 启用 R8/ProGuard 进行代码压缩、优化和混淆。
-            isShrinkResources = false    // 启用资源缩减，移除未被引用的资源文件。
+            isShrinkResources = true    // 启用资源缩减，移除未被引用的资源文件。
             isDebuggable = false        // 发布版本禁止调试。
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
