@@ -36,7 +36,7 @@ val (coreCommitCount, coreLatestTag) = FileRepositoryBuilder().setGitDir(rootPro
             val ver = git.describe().setTags(true).setAbbrev(0).call().removePrefix("v")
             coreCommitCount to ver
         }
-    }.getOrNull() ?: (1145 to "1.0")
+    }.getOrNull() ?: (3047 to "2.0")
 
 val defaultManagerPackageName by extra("org.lsposed.npatch")
 val apiCode by extra(100)
@@ -84,6 +84,29 @@ fun Project.configureBaseExtension() {
             versionCode = verCode
             versionName = verName
             multiDexEnabled = true
+
+            signingConfigs.create("config") {
+                val androidStoreFile = (
+                    System.getenv("ANDROID_STORE_FILE")
+                        ?: project.findProperty("androidStoreFile")?.toString()
+                    )?.takeIf { it.isNotBlank() }
+                val androidStorePassword = System.getenv("ANDROID_STORE_PASSWORD")
+                    ?: project.findProperty("androidStorePassword")?.toString()
+                val androidKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                    ?: project.findProperty("androidKeyAlias")?.toString()
+                val androidKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+                    ?: project.findProperty("androidKeyPassword")?.toString()
+                if (androidStoreFile != null && androidStorePassword != null && androidKeyAlias != null && androidKeyPassword != null) {
+                    storeFile = rootProject.file(androidStoreFile)
+                    storePassword = androidStorePassword
+                    keyAlias = androidKeyAlias
+                    keyPassword = androidKeyPassword
+                }
+                if (this is com.android.build.api.dsl.ApkSigningConfig) {
+                    enableV2Signing = true
+                    enableV3Signing = true
+                }
+            }
 
             externalNativeBuild {
                 cmake {
