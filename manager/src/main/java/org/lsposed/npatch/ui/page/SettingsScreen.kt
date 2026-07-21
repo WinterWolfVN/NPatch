@@ -1,7 +1,6 @@
 package org.lsposed.npatch.ui.page
 
 import android.app.Activity
-import android.app.Activity
 import android.content.Intent
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
