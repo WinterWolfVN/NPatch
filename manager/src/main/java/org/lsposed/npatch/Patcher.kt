@@ -95,7 +95,6 @@ object Patcher {
                 lspApp.contentResolver.openOutputStream(finalApks.uri)?.use { output ->
                     apksCache.inputStream().use { it.copyTo(output) }
                 } ?: throw IOException("Unable to open output stream: ${finalApks.uri}")
-                lspApp.targetApkFiles = arrayListOf(apksCache)
                 logger.i("Packaged as APKS: $apksName")
             }
             logger.i("Patched files are saved to ${root.uri.lastPathSegment}")
