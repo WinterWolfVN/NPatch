@@ -1,6 +1,7 @@
 package org.lsposed.npatch.ui.page
 
 import android.app.Activity
+import android.app.Activity
 import android.content.Intent
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -25,8 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.coroutines.launch
 import org.lsposed.npatch.R
@@ -307,11 +308,9 @@ private fun Language() {
             "zh-TW" to "繁體中文",
         )
     }
-    
 
+    val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
-
-    val currentTag by remember {
         derivedStateOf {
             AppCompatDelegate.getApplicationLocales()
                 .toLanguageTags()
@@ -350,6 +349,10 @@ private fun Language() {
                         }
                         AppCompatDelegate.setApplicationLocales(localeList)
                         expanded = false
+                        (context as? Activity)?.let {
+                            it.finish()
+                            it.startActivity(it.intent)
+                        }
                     }
                 )
             }
