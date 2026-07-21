@@ -2,7 +2,7 @@ package org.lsposed.npatch.metaloader;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityThread;
-import android.app.AppComponetFactory;
+import android.app.AppComponentFactory;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.IPackageManager;
 import android.os.Build;
@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.zip.ZipFile;
 
 @SuppressLint("UnsafeDynamicallyLoadedCode")
-public class LSPAppComponentFactoryStub extends AppComponetFactory {
+public class LSPAppComponentFactoryStub extends AppComponentFactory {
 
     private static final String TAG = "NPatch-MetaLoader";
     private static final Map<String, String> archToLib = new HashMap<String, String>(4);
