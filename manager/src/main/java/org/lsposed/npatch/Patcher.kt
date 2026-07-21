@@ -12,6 +12,8 @@ import org.lsposed.patch.NPatch
 import org.lsposed.patch.util.Logger
 import java.io.File
 import java.io.IOException
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 object Patcher {
 
@@ -77,6 +79,25 @@ object Patcher {
                     } ?: throw IOException("Unable to open an output stream:  ${finalFile.uri}")
                 }
             lspApp.targetApkFiles = apkFileList
+            if (apkFileList.size > 1) {
+                val packageName = options.newPackageName.ifEmpty { apkFileList.first().nameWithoutExtension }
+                val apksName = "$packageName-npatched.apks"
+                val apksCache = File(lspApp.externalCacheDir, apksName)
+                ZipOutputStream(apksCache.outputStream()).use { zip ->
+                    apkFileList.forEach { apk ->
+                        zip.putNextEntry(ZipEntry(apk.name))
+                        apk.inputStream().use { it.copyTo(zip) }
+                        zip.closeEntry()
+                    }
+                }
+                val finalApks = root.createFile("application/vnd.android.package-archive", apksName)
+                    ?: throw IOException("Cannot create output file: $apksName")
+                lspApp.contentResolver.openOutputStream(finalApks.uri)?.use { output ->
+                    apksCache.inputStream().use { it.copyTo(output) }
+                } ?: throw IOException("Unable to open output stream: ${finalApks.uri}")
+                lspApp.targetApkFiles = arrayListOf(apksCache)
+                logger.i("Packaged as APKS: $apksName")
+            }
             logger.i("Patched files are saved to ${root.uri.lastPathSegment}")
         }
     }
