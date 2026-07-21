@@ -162,16 +162,23 @@ jobs:
     - name: 設定 commit id
       run: echo "commit=$(echo ${{ github.sha }} | cut -c-7)" > $GITHUB_ENV
 
-    - name: 如果需要，則寫入簽名密鑰
-      if: github.ref == 'refs/heads/open-source' && github.event_name != 'pull_request'
+    - name: Configure release signing key
+      if: github.event_name == 'push' && github.ref == 'refs/heads/open-source'
       run: |
-        if [ ! -z "${{ secrets.KEY_STORE }}" ]; then
-          echo androidStorePassword='${{ secrets.KEY_STORE_PASSWORD }}' >> gradle.properties
-          echo androidKeyAlias='${{ secrets.ALIAS }}' >> gradle.properties
-          echo androidKeyPassword='${{ secrets.KEY_PASSWORD }}' >> gradle.properties
-          echo androidStoreFile='key.jks' >> gradle.properties
+        if [ -n "${{ secrets.KEY_STORE }}" ]; then
+          echo "正在配置签名属性..."
+          cat << EOF >> gradle.properties
+          androidStorePassword=${{ secrets.KEY_STORE_PASSWORD }}
+          androidKeyAlias=${{ secrets.ALIAS }}
+          androidKeyPassword=${{ secrets.KEY_PASSWORD }}
+          androidStoreFile=key.jks
+          EOF
           echo ${{ secrets.KEY_STORE }} | base64 --decode > key.jks
+          echo "签名密钥配置完成。"
+        else
+          echo "签名密钥未配置，跳过签名步骤。"
         fi
+      shell: bash
                     
     - name: 使用 Gradle 構建
       run: ./gradlew buildAll
