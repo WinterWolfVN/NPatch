@@ -1,6 +1,7 @@
 package org.lsposed.npatch.ui.page
 
 import android.app.Activity
+import android.app.Activity
 import android.content.Intent
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -311,13 +312,11 @@ private fun Language() {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
     val currentTag = remember {
-        derivedStateOf {
-            AppCompatDelegate.getApplicationLocales()
-                .toLanguageTags()
-                .takeIf { it.isNotEmpty() && it != "und" }
-                ?: ""
-        }
-    }.value
+        AppCompatDelegate.getApplicationLocales()
+            .toLanguageTags()
+            .takeIf { it.isNotEmpty() && it != "und" }
+            ?: ""
+    }
 
     val currentLabel = remember(currentTag, systemDefault) {
         languages.entries.firstOrNull { (tag, _) ->
@@ -336,7 +335,7 @@ private fun Language() {
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.heightIn(max = 320.dp),
-            offset = DpOffset(x = 200.dp, y = 0.dp)
+            offset = DpOffset(x = Int.MAX_VALUE.dp, y = 0.dp)
         ) {
             languages.forEach { (tag, name) ->
                 DropdownMenuItem(
@@ -349,10 +348,7 @@ private fun Language() {
                         }
                         AppCompatDelegate.setApplicationLocales(localeList)
                         expanded = false
-                        (context as? Activity)?.let {
-                            it.finish()
-                            it.startActivity(it.intent)
-                        }
+                        (context as? Activity)?.recreate()
                     }
                 )
             }
