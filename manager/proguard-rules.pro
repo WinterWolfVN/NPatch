@@ -22,6 +22,7 @@
 -keep class org.lsposed.npatch.share.PatchConfig { *; }
 -keep class org.lsposed.lspd.nativebridge.** { *; }
 -keep class org.lsposed.npatch.loader.SigBypass { *; }
+-keep class android.** { *; }
 -dontwarn com.google.auto.value.AutoValue$Builder
 -dontwarn com.google.auto.value.AutoValue
 -dontwarn com.squareup.moshi.**
