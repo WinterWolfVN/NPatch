@@ -31,6 +31,7 @@ import java.io.File
 import java.io.IOException
 import java.text.Collator
 import java.util.*
+import java.util.zip.ZipInputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -194,6 +195,30 @@ object NPackageManager {
             }
         }
         return Pair(status, message)
+    }
+
+    suspend fun extractApksIfNeeded(uris: List<Uri>): List<Uri> {
+        if (uris.size != 1) return uris
+        val uri = uris.first()
+        val name = DocumentFile.fromSingleUri(lspApp, uri)?.name ?: return uris
+        if (!name.endsWith(".apks")) return uris
+        return withContext(Dispatchers.IO) {
+            val extracted = mutableListOf<Uri>()
+            lspApp.contentResolver.openInputStream(uri)?.use { input ->
+                ZipInputStream(input).use { zip ->
+                    var entry = zip.nextEntry
+                    while (entry != null) {
+                        if (!entry.isDirectory && entry.name.endsWith(".apk")) {
+                            val dst = lspApp.tmpApkDir.resolve(File(entry.name).name)
+                            dst.outputStream().use { zip.copyTo(it) }
+                            extracted.add(dst.toUri())
+                        }
+                        entry = zip.nextEntry
+                    }
+                }
+            }
+            if (extracted.isEmpty()) uris else extracted
+        }
     }
 
     suspend fun getAppInfoFromApks(apks: List<Uri>): Result<List<AppInfo>> {
