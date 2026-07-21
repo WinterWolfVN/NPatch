@@ -25,8 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.DpOffset
 import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.coroutines.launch
 import org.lsposed.npatch.R
@@ -307,14 +307,17 @@ private fun Language() {
             "zh-TW" to "繁體中文",
         )
     }
+    
 
-    val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
-    val currentTag = remember {
-        AppCompatDelegate.getApplicationLocales()
-            .toLanguageTags()
-            .takeIf { it.isNotEmpty() && it != "und" }
-            ?: ""
+
+    val currentTag by remember {
+        derivedStateOf {
+            AppCompatDelegate.getApplicationLocales()
+                .toLanguageTags()
+                .takeIf { it.isNotEmpty() && it != "und" }
+                ?: ""
+        }
     }
 
     val currentLabel = remember(currentTag, systemDefault) {
@@ -334,7 +337,7 @@ private fun Language() {
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.heightIn(max = 320.dp),
-            offset = DpOffset(x = Int.MAX_VALUE.dp, y = 0.dp)
+            offset = DpOffset(x = 200.dp, y = 0.dp)
         ) {
             languages.forEach { (tag, name) ->
                 DropdownMenuItem(
@@ -347,7 +350,6 @@ private fun Language() {
                         }
                         AppCompatDelegate.setApplicationLocales(localeList)
                         expanded = false
-                        (context as? Activity)?.recreate()
                     }
                 )
             }
