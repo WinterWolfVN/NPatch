@@ -161,6 +161,17 @@ jobs:
 
     - name: 設定 commit id
       run: echo "commit=$(echo ${{ github.sha }} | cut -c-7)" > $GITHUB_ENV
+
+    - name: 如果需要，則寫入簽名密鑰
+      if: github.ref == 'refs/heads/open-source' && github.event_name != 'pull_request'
+      run: |
+        if [ ! -z "${{ secrets.KEY_STORE }}" ]; then
+          echo androidStorePassword='${{ secrets.KEY_STORE_PASSWORD }}' >> gradle.properties
+          echo androidKeyAlias='${{ secrets.ALIAS }}' >> gradle.properties
+          echo androidKeyPassword='${{ secrets.KEY_PASSWORD }}' >> gradle.properties
+          echo androidStoreFile='key.jks' >> gradle.properties
+          echo ${{ secrets.KEY_STORE }} | base64 --decode > key.jks
+        fi
                     
     - name: 使用 Gradle 構建
       run: ./gradlew buildAll
