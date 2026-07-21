@@ -1,7 +1,6 @@
 package org.lsposed.npatch.ui.page
 
 import android.app.Activity
-import android.app.Activity
 import android.content.Intent
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -311,13 +310,14 @@ private fun Language() {
 
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
+    val currentTag = remember {
         derivedStateOf {
             AppCompatDelegate.getApplicationLocales()
                 .toLanguageTags()
                 .takeIf { it.isNotEmpty() && it != "und" }
                 ?: ""
         }
-    }
+    }.value
 
     val currentLabel = remember(currentTag, systemDefault) {
         languages.entries.firstOrNull { (tag, _) ->
