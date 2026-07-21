@@ -8,26 +8,26 @@ import android.database.Cursor;
 import android.net.Uri;
 import dalvik.system.PathClassLoader;
 
-public final class AppEnvironment {
+final class AppEnvironment {
     private static ClassLoader loader;
     private static Context ctx;
     private static final AppComponentFactory factory = new AppComponentFactory();
 
-    public static void init(ClassLoader cl, Context c) {
+    static void init(ClassLoader cl, Context c) {
         loader = new AppClassLoader(cl, c);
         ctx = c.getApplicationContext();
         hook();
     }
 
-    public static ClassLoader cl(ClassLoader original) {
+    static ClassLoader cl(ClassLoader original) {
         return loader != null ? loader : original;
     }
 
-    public static Context ctx() {
+    static Context ctx() {
         return ctx;
     }
 
-    public static AppComponentFactory factory() {
+    static AppComponentFactory factory() {
         return factory;
     }
 
@@ -41,34 +41,16 @@ public final class AppEnvironment {
         } catch (Throwable ignored) {}
     }
 
-    public static final class AppClassLoader extends PathClassLoader {
-        public AppClassLoader(ClassLoader parent, Context c) {
+    static final class AppClassLoader extends PathClassLoader {
+        AppClassLoader(ClassLoader parent, Context c) {
             super(c != null && c.getApplicationInfo() != null ? c.getApplicationInfo().sourceDir : "", parent);
         }
     }
 
-    public static class AppComponentFactory {
-        public Application instantiateApplication(ClassLoader cl, String className) {
-            try {
-                return (Application) AppEnvironment.cl(cl).loadClass(className).newInstance();
-            } catch (Throwable t) {
-                throw new RuntimeException(t);
-            }
-        }
-
-        public Activity instantiateActivity(ClassLoader cl, String className, Intent intent) {
-            try {
-                return (Activity) AppEnvironment.cl(cl).loadClass(className).newInstance();
-            } catch (Throwable t) {
-                throw new RuntimeException(t);
-            }
-        }
-    }
-
-    public static final class Proxy extends Instrumentation {
+    static final class Proxy extends Instrumentation {
         private final Instrumentation base;
 
-        public Proxy(Instrumentation base) {
+        Proxy(Instrumentation base) {
             this.base = base;
         }
 
@@ -83,7 +65,7 @@ public final class AppEnvironment {
         }
     }
 
-    public static final class AppInitializer extends ContentProvider {
+    static final class AppInitializer extends ContentProvider {
         @Override
         public boolean onCreate() {
             Context c = getContext();
@@ -99,4 +81,22 @@ public final class AppEnvironment {
         @Override public int delete(Uri u, String s, String[] a) { return 0; }
         @Override public int update(Uri u, ContentValues v, String s, String[] a) { return 0; }
     }
-  }
+}
+
+public class AppComponentFactory {
+    public Application instantiateApplication(ClassLoader cl, String className) {
+        try {
+            return (Application) AppEnvironment.cl(cl).loadClass(className).newInstance();
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public Activity instantiateActivity(ClassLoader cl, String className, Intent intent) {
+        try {
+            return (Activity) AppEnvironment.cl(cl).loadClass(className).newInstance();
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+                }
