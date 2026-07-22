@@ -2,7 +2,9 @@ package org.lsposed.npatch.metaloader;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityThread;
-import android.app.AppComponentFactory;
+import android.app.AppComponentFactoryStub;
+import android.content.ContentProvider;
+import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.IPackageManager;
 import android.os.Build;
