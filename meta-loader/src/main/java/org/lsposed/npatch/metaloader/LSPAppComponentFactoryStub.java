@@ -53,6 +53,7 @@ public class LSPAppComponentFactoryStub extends AppComponentFactory {
             }
             return true;
         }
+    }
 
     private static void bootstrap() {
         try {
