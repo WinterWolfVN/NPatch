@@ -345,7 +345,7 @@ public class NPatch {
             logger.i("Adding metaloader dex...");
             try (var is = getClass().getClassLoader().getResourceAsStream(Constants.META_LOADER_DEX_ASSET_PATH)) {
                 if (is == null) throw new PatchError("Meta loader dex not found");
-                if (!injectdex) {
+                if (!injectDex) {
                     dstZFile.add("classes.dex", is);
                 } else {
                     var dexCount = srcZFile.entries().stream().filter(entry -> {
