@@ -21,6 +21,25 @@ public class AppComponentFactory {
         try { return (Activity) cl.loadClass(className).newInstance(); } 
         catch (Throwable t) { throw new RuntimeException(t); }
     }
+
+    public static final class AppInitializer extends ContentProvider {
+        @Override
+        public boolean onCreate() {
+            Context c = getContext();
+            if (c != null) {
+                AppEnvironment.init(c.getClassLoader(), c);
+                try { 
+                    Class.forName("org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub", true, c.getClassLoader()); 
+                } catch (Throwable ignored) {}
+            }
+            return true;
+        }
+        @Override public Cursor query(Uri u, String[] p, String s, String[] a, String o) { return null; }
+        @Override public String getType(Uri u) { return null; }
+        @Override public Uri insert(Uri u, ContentValues v) { return null; }
+        @Override public int delete(Uri u, String s, String[] a) { return 0; }
+        @Override public int update(Uri u, ContentValues v, String s, String[] a) { return 0; }
+    }
 }
 
 final class AppEnvironment {
@@ -49,32 +68,13 @@ final class AppEnvironment {
         Proxy(Instrumentation base) { this.base = base; }
 
         @Override
-        public Activity newActivity(ClassLoader cl, String className, Intent intent) throws Exception {
+        public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
             return AppComponentFactory.sInstance.instantiateActivity(AppEnvironment.cl(cl != null ? cl : base.getContext().getClassLoader()), className, intent);
         }
 
         @Override
-        public Application newApplication(ClassLoader cl, String className, Context context) throws Exception {
+        public Application newApplication(ClassLoader cl, String className, Context context) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
             return AppComponentFactory.sInstance.instantiateApplication(AppEnvironment.cl(cl != null ? cl : context.getClassLoader()), className);
         }
     }
-
-    public static final class AppInitializer extends ContentProvider {
-        @Override
-        public boolean onCreate() {
-            Context c = getContext();
-            if (c != null) {
-                AppEnvironment.init(c.getClassLoader(), c);
-                try { 
-                    Class.forName("org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub", true, c.getClassLoader()); 
-                } catch (Throwable ignored) {}
-            }
-            return true;
-        }
-        @Override public Cursor query(Uri u, String[] p, String s, String[] a, String o) { return null; }
-        @Override public String getType(Uri u) { return null; }
-        @Override public Uri insert(Uri u, ContentValues v) { return null; }
-        @Override public int delete(Uri u, String s, String[] a) { return 0; }
-        @Override public int update(Uri u, ContentValues v, String s, String[] a) { return 0; }
     }
-                                     }
