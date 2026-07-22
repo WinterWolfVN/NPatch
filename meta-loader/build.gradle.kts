@@ -12,7 +12,7 @@ android {
     sourceSets {
         named("main") {
             java.srcDir("${rootProject.projectDir}/src") 
-            java.exclude(android/os/**")
+            java.exclude("android/os/**")
         }
     }
 
