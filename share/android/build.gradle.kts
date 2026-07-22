@@ -3,6 +3,12 @@ plugins {
 }
 
 android {
+    sourceSets {
+        named("main") {
+            java.srcDir("${rootProject.projectDir}/src") 
+            exclude("android/app/**")
+        }
+    }
     namespace = "org.lsposed.npatch.share"
 
     buildFeatures {
