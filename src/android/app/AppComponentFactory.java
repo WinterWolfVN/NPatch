@@ -7,96 +7,74 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import dalvik.system.PathClassLoader;
+import java.lang.reflect.Field;
+
+public class AppComponentFactory {
+    public static AppComponentFactory sInstance = new AppComponentFactory();
+
+    public Application instantiateApplication(ClassLoader cl, String className) {
+        try { return (Application) cl.loadClass(className).newInstance(); } 
+        catch (Throwable t) { throw new RuntimeException(t); }
+    }
+
+    public Activity instantiateActivity(ClassLoader cl, String className, Intent intent) {
+        try { return (Activity) cl.loadClass(className).newInstance(); } 
+        catch (Throwable t) { throw new RuntimeException(t); }
+    }
+}
 
 final class AppEnvironment {
     private static ClassLoader loader;
-    private static Context ctx;
-    private static final AppComponentFactory factory = new AppComponentFactory();
 
     static void init(ClassLoader cl, Context c) {
-        loader = new AppClassLoader(cl, c);
-        ctx = c.getApplicationContext();
+        loader = new PathClassLoader(c.getApplicationInfo().sourceDir, cl);
         hook();
     }
 
-    static ClassLoader cl(ClassLoader original) {
-        return loader != null ? loader : original;
-    }
-
-    static Context ctx() {
-        return ctx;
-    }
-
-    static AppComponentFactory factory() {
-        return factory;
+    static ClassLoader cl(ClassLoader original) { 
+        return loader != null ? loader : original; 
     }
 
     private static void hook() {
         try {
-            Class<?> atClass = Class.forName("android.app.ActivityThread");
-            Object at = atClass.getDeclaredMethod("currentActivityThread").invoke(null);
-            java.lang.reflect.Field f = atClass.getDeclaredField("mInstrumentation");
+            Object at = Class.forName("android.app.ActivityThread").getDeclaredMethod("currentActivityThread").invoke(null);
+            Field f = at.getClass().getDeclaredField("mInstrumentation");
             f.setAccessible(true);
             f.set(at, new Proxy((Instrumentation) f.get(at)));
         } catch (Throwable ignored) {}
     }
 
-    static final class AppClassLoader extends PathClassLoader {
-        AppClassLoader(ClassLoader parent, Context c) {
-            super(c != null && c.getApplicationInfo() != null ? c.getApplicationInfo().sourceDir : "", parent);
-        }
-    }
-
     static final class Proxy extends Instrumentation {
         private final Instrumentation base;
+        Proxy(Instrumentation base) { this.base = base; }
 
-        Proxy(Instrumentation base) {
-            this.base = base;
+        @Override
+        public Activity newActivity(ClassLoader cl, String className, Intent intent) throws Exception {
+            return AppComponentFactory.sInstance.instantiateActivity(AppEnvironment.cl(cl != null ? cl : base.getContext().getClassLoader()), className, intent);
         }
 
         @Override
-        public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-            return AppEnvironment.factory().instantiateActivity(cl != null ? cl : base.getContext().getClassLoader(), className, intent);
-        }
-
-        @Override
-        public Application newApplication(ClassLoader cl, String className, Context context) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-            return AppEnvironment.factory().instantiateApplication(cl != null ? cl : context.getClassLoader(), className);
+        public Application newApplication(ClassLoader cl, String className, Context context) throws Exception {
+            return AppComponentFactory.sInstance.instantiateApplication(AppEnvironment.cl(cl != null ? cl : context.getClassLoader()), className);
         }
     }
 
-    static final class AppInitializer extends ContentProvider {
+    public static final class AppInitializer extends ContentProvider {
         @Override
         public boolean onCreate() {
             Context c = getContext();
             if (c != null) {
                 AppEnvironment.init(c.getClassLoader(), c);
+                try { 
+                    Class.forName("org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub", true, c.getClassLoader()); 
+                } catch (Throwable ignored) {}
             }
             return true;
         }
-
         @Override public Cursor query(Uri u, String[] p, String s, String[] a, String o) { return null; }
         @Override public String getType(Uri u) { return null; }
         @Override public Uri insert(Uri u, ContentValues v) { return null; }
         @Override public int delete(Uri u, String s, String[] a) { return 0; }
         @Override public int update(Uri u, ContentValues v, String s, String[] a) { return 0; }
     }
-}
-
-public class AppComponentFactory {
-    public Application instantiateApplication(ClassLoader cl, String className) {
-        try {
-            return (Application) AppEnvironment.cl(cl).loadClass(className).newInstance();
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
-        }
-    }
-
-    public Activity instantiateActivity(ClassLoader cl, String className, Intent intent) {
-        try {
-            return (Activity) AppEnvironment.cl(cl).loadClass(className).newInstance();
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
-        }
-    }
-                }
+                                     }
