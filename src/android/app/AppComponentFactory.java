@@ -20,7 +20,7 @@ public class AppComponentFactory {
     }                                                            
 }
 
-final class AppEnvironment {
+public static final class AppEnvironment {
     private static ClassLoader loader;
 
     static void init(ClassLoader cl, Context c) {
