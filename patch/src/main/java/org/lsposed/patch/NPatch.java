@@ -405,7 +405,7 @@ public class NPatch {
             for (StoredEntry entry : srcZFile.entries()) {
                 String name = entry.getCentralDirectoryHeader().getName();
                 if (dstZFile.get(name) != null) continue;
-                if (embedOriginal && name.startsWith("classes") && name.endsWith(".dex")) continue;
+                if (!injectDex && name.startsWith("classes") && name.endsWith(".dex")) continue;
                 if (name.equals("AndroidManifest.xml")) continue;
                 if (isApkSignatureEntry(name))
                     continue;
