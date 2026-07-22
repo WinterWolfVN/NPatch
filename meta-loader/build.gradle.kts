@@ -29,16 +29,15 @@ androidComponents.onVariants { variant ->
     val variantCapped = variant.name.replaceFirstChar { it.uppercase() }
     val variantLowered = variant.name.lowercase()
 
-    task<Copy>("copyDex$variantCapped") {
-        dependsOn("assemble$variantCapped")
-        val dexOutPath = if (variant.buildType == "release")
-            "${layout.buildDirectory.get()}/intermediates/dex/$variantLowered/minify${variantCapped}WithR8" else
-            "${layout.buildDirectory.get()}/intermediates/dex/$variantLowered/mergeDex$variantCapped"
-        from(dexOutPath)
-        rename("classes.dex", "metaloader.dex")
-        into("${rootProject.projectDir}/out/assets/${variant.name}/npatch")
-    }
-
+    tasks.register<Copy>("copyDex$variantCapped") {
+    dependsOn("assemble$variantCapped")
+    val dexOutPath = if (variant.buildType == "release")
+        "${layout.buildDirectory.get()}/intermediates/dex/$variantLowered/minify${variantCapped}WithR8" else
+        "${layout.buildDirectory.get()}/intermediates/dex/$variantLowered/mergeDex$variantCapped"
+    from(dexOutPath)
+    rename("classes.dex", "metaloader.dex")
+    into("${rootProject.projectDir}/out/assets/${variant.name}/npatch")
+}
     tasks.register("copy$variantCapped") {
         dependsOn("copyDex$variantCapped")
 
