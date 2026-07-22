@@ -25,7 +25,7 @@ public class ModuleLoader {
              dexFile = apkFile.getEntry("classes" + secondary + ".dex"), secondary++) {
             try (var in = apkFile.getInputStream(dexFile)) {
                 var memory = SharedMemory.create(null, in.available());
-                var byteBuffer = memory.mapReadWrite();
+                var byteBuffer = memory.map();
                 Channels.newChannel(in).read(byteBuffer);
                 SharedMemory.unmap(byteBuffer);
                 memory.setProtect(OsConstants.PROT_READ);
