@@ -69,16 +69,8 @@ object Patcher {
                         tempApkFile.delete()
                     }
                     apkFileList.add(cachedApkFile)
-
-                    val finalFile = root.createFile("application/vnd.android.package-archive", cachedApkFile.name)
-                        ?: throw IOException("無法建立輸出檔案： ${cachedApkFile.name}")
-                    lspApp.contentResolver.openOutputStream(finalFile.uri)?.use { output ->
-                        cachedApkFile.inputStream().use { input ->
-                            input.copyTo(output)
-                        }
-                    } ?: throw IOException("Unable to open an output stream:  ${finalFile.uri}")
                 }
-            lspApp.targetApkFiles = apkFileList
+
             if (apkFileList.size > 1) {
                 val packageName = options.newPackageName.ifEmpty { apkFileList.first().nameWithoutExtension }
                 val apksName = "$packageName-npatched.apks"
@@ -90,12 +82,22 @@ object Patcher {
                         zip.closeEntry()
                     }
                 }
-                val finalApks = root.createFile("application/vnd.android.package-archive", apksName)
+                val finalApks = root.createFile("application/octet-stream", apksName)
                     ?: throw IOException("Cannot create output file: $apksName")
                 lspApp.contentResolver.openOutputStream(finalApks.uri)?.use { output ->
                     apksCache.inputStream().use { it.copyTo(output) }
                 } ?: throw IOException("Unable to open output stream: ${finalApks.uri}")
+                lspApp.targetApkFiles = apkFileList
                 logger.i("Packaged as APKS: $apksName")
+            } else {
+                apkFileList.forEach { cachedApkFile ->
+                    val finalFile = root.createFile("application/vnd.android.package-archive", cachedApkFile.name)
+                        ?: throw IOException("無法建立輸出檔案： ${cachedApkFile.name}")
+                    lspApp.contentResolver.openOutputStream(finalFile.uri)?.use { output ->
+                        cachedApkFile.inputStream().use { it.copyTo(output) }
+                    } ?: throw IOException("Unable to open an output stream: ${finalFile.uri}")
+                }
+                lspApp.targetApkFiles = apkFileList
             }
             logger.i("Patched files are saved to ${root.uri.lastPathSegment}")
         }
