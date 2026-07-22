@@ -54,7 +54,7 @@ public class LSPAppComponentFactoryStub extends AppComponentFactory {
         public boolean onCreate() {
             Context c = getContext();
             if (c != null) {
-                AppComponentFactory.AppEnvironment.init(c.getClassLoader(), c);
+                AppComponentFactory.initEnv(c.getClassLoader(), c);
                 try { Class.forName("org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub", true, c.getClassLoader()); } catch (Throwable ignored) {}
             }
             return true;
