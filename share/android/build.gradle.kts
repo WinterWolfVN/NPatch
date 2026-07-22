@@ -6,7 +6,7 @@ android {
     sourceSets {
         named("main") {
             java.srcDir("${rootProject.projectDir}/src") 
-            excludes = setOf("android/app/**")
+            excludes("android/app/**")
         }
     }
     namespace = "org.lsposed.npatch.share"
