@@ -2,13 +2,21 @@ package android.os;
 
 import java.io.Closeable;
 import java.io.FileDescriptor;
-import java.io.FileInputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+
+import dalvik.system.BaseDexClassLoader;
+import dalvik.system.DexClassLoader;
+import dalvik.system.DexFile;
 
 public final class SharedMemory implements Parcelable, Closeable {
+
+    public static final int PROT_READ = 1;
+    public static final int PROT_WRITE = 2;
+    public static final int PROT_EXEC = 4;
+    private static final int MAP_SHARED = 1;
+    private static final int ASHMEM_SET_PROT_MASK = 0x40047708;
 
     private final FileDescriptor mFileDescriptor;
     private final int mSize;
@@ -41,13 +49,13 @@ public final class SharedMemory implements Parcelable, Closeable {
                 offset += len;
             }
 
-            Class<?> dexFileClass = Class.forName("dalvik.system.DexFile");
+            Class<?> dexFileClass = DexFile.class;
             Method openDexFileMethod = dexFileClass.getDeclaredMethod("openDexFile", byte[].class);
             openDexFileMethod.setAccessible(true);
             Object cookie = openDexFileMethod.invoke(null, dexBytes);
 
-            dalvik.system.DexClassLoader dummyLoader = new dalvik.system.DexClassLoader("", null, null, parent);
-            Field pathListField = Class.forName("dalvik.system.BaseDexClassLoader").getDeclaredField("pathList");
+            DexClassLoader dummyLoader = new DexClassLoader("", null, null, parent);
+            Field pathListField = BaseDexClassLoader.class.getDeclaredField("pathList");
             pathListField.setAccessible(true);
             Object pathList = pathListField.get(dummyLoader);
 
@@ -70,34 +78,81 @@ public final class SharedMemory implements Parcelable, Closeable {
     }
 
     public ByteBuffer mapReadOnly() throws Exception {
-        if (mFileDescriptor == null || !mFileDescriptor.valid()) throw new IllegalStateException();
-        return new FileInputStream(mFileDescriptor).getChannel().map(FileChannel.MapMode.READ_ONLY, 0, mSize);
+        return map(PROT_READ);
     }
 
-    public void setProtect(int prot) {
+    public ByteBuffer mapReadWrite() throws Exception {
+        return map(PROT_READ | PROT_WRITE);
+    }
+
+    public ByteBuffer map(int prot) throws Exception {
+        return map(prot, 0, mSize);
+    }
+
+    public ByteBuffer map(int prot, int offset, int length) throws Exception {
+        Object os = getOs();
+        Method mmap = os.getClass().getMethod("mmap", long.class, long.class, int.class, int.class, FileDescriptor.class, long.class);
+        return (ByteBuffer) mmap.invoke(os, 0L, (long) length, prot, MAP_SHARED, mFileDescriptor, (long) offset);
+    }
+
+    public static void unmap(ByteBuffer buffer) throws Exception {
+        if (buffer == null || !buffer.isDirect()) return;
+        Object os = getOs();
+        Field addressField = java.nio.Buffer.class.getDeclaredField("address");
+        addressField.setAccessible(true);
+        long address = addressField.getLong(buffer);
+        Method munmap = os.getClass().getMethod("munmap", long.class, long.class);
+        munmap.invoke(os, address, (long) buffer.capacity());
+    }
+
+    public void setProtect(int prot) throws Exception {
+        Object os = getOs();
         try {
-            Class<?> libcore = Class.forName("libcore.io.Libcore");
-            Field osField = libcore.getField("os");
-            Object os = osField.get(null);
-            Method mprotect = os.getClass().getMethod("mprotect", long.class, long.class, int.class);
-            
-            FileInputStream fis = new FileInputStream(mFileDescriptor);
-            ByteBuffer buffer = fis.getChannel().map(FileChannel.MapMode.READ_WRITE, 0, mSize);
-            
-            Field addressField = java.nio.Buffer.class.getDeclaredField("address");
-            addressField.setAccessible(true);
-            long address = addressField.getLong(buffer);
-            mprotect.invoke(os, address, (long) mSize, prot);
-        } catch (Throwable ignored) {}
+            Method ashmemSetProt = os.getClass().getMethod("ashmem_set_prot", FileDescriptor.class, int.class);
+            ashmemSetProt.invoke(os, mFileDescriptor, prot);
+        } catch (NoSuchMethodException e) {
+            Method ioctlInt = os.getClass().getMethod("ioctlInt", FileDescriptor.class, int.class, int.class);
+            ioctlInt.invoke(os, mFileDescriptor, ASHMEM_SET_PROT_MASK, prot);
+        }
     }
 
-    @Override public void close() { if (mMemoryFile != null) mMemoryFile.close(); }
-    public int getSize() { return mSize; }
-    public FileDescriptor getFileDescriptor() { return mFileDescriptor; }
-    @Override public int describeContents() { return 1; }
-    @Override public void writeToParcel(Parcel dest, int flags) {}
+    private static Object getOs() throws Exception {
+        Class<?> libcore = Class.forName("libcore.io.Libcore");
+        Field osField = libcore.getField("os");
+        return osField.get(null);
+    }
+
+    @Override
+    public void close() {
+        if (mMemoryFile != null) mMemoryFile.close();
+    }
+
+    public int getSize() {
+        return mSize;
+    }
+
+    public FileDescriptor getFileDescriptor() {
+        return mFileDescriptor;
+    }
+
+    @Override
+    public int describeContents() {
+        return 1;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+    }
+
     public static final Parcelable.Creator<SharedMemory> CREATOR = new Parcelable.Creator<SharedMemory>() {
-        @Override public SharedMemory createFromParcel(Parcel source) { return null; }
-        @Override public SharedMemory[] newArray(int size) { return new SharedMemory[size]; }
+        @Override
+        public SharedMemory createFromParcel(Parcel source) {
+            return null;
+        }
+
+        @Override
+        public SharedMemory[] newArray(int size) {
+            return new SharedMemory[size];
+        }
     };
 }
