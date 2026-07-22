@@ -30,27 +30,7 @@ jobs:
           git submodule update --init --force --recursive          
           echo "Seen"          
           find core/ -name "CMakeLists.txt"
-
-    - name: System Port
-      run: |
-            mkdir -p out/Port1
-            javac -source 1.8 -target 1.8 \
-            -bootclasspath $ANDROID_HOME/platforms/android-34/android.jar \
-            -d out/Port1 \
-            src/android/os/SharedMemory.java        
-            $ANDROID_HOME/build-tools/34.0.0/d8 \
-            --output out/Port1/output.zip \
-            out/Port1/android/os/SharedMemory.class \          
-            unzip -o out/Port1/output.zip -d out/Port1/
-            ls -lah out/Port1/classes.dex
-
-    - name: System Port File
-      uses: actions/upload-artifact@v5
-      with:
-        name: Port-System-${{ env.commit }} 
-        path: out/Port1
-        retention-days: 7
-
+  
     - name: Fix Submodule sun.misc
       run: |
           echo "Searching in submodules..."          
