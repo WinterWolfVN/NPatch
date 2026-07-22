@@ -5,8 +5,7 @@ plugins {
 android {
     sourceSets {
         named("main") {
-            java.srcDir("${rootProject.projectDir}/src") 
-            java.excludes("android/app/**")
+            java.srcDir("${rootProject.projectDir}/src")             
         }
     }
     namespace = "org.lsposed.npatch.share"
@@ -15,6 +14,10 @@ android {
         androidResources = false
         buildConfig = false
     }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    exclude("**/android/os/**")
 }
 
 dependencies {
