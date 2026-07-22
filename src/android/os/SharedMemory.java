@@ -28,13 +28,17 @@ public final class SharedMemory implements Parcelable, Closeable {
         this.mMemoryFile = memoryFile;
     }
 
-    public static SharedMemory create(String name, int size) throws Exception {
-        if (size <= 0) throw new IllegalArgumentException();
-        MemoryFile memoryFile = new MemoryFile(name, size);
-        Method getFdMethod = MemoryFile.class.getDeclaredMethod("getFileDescriptor");
-        getFdMethod.setAccessible(true);
-        FileDescriptor fd = (FileDescriptor) getFdMethod.invoke(memoryFile);
-        return new SharedMemory(fd, size, memoryFile);
+    public static SharedMemory create(String name, int size) {
+        try {
+            if (size <= 0) throw new IllegalArgumentException("Size must be > 0");
+            MemoryFile memoryFile = new MemoryFile(name, size);
+            Method getFdMethod = MemoryFile.class.getDeclaredMethod("getFileDescriptor");
+            getFdMethod.setAccessible(true);
+            FileDescriptor fd = (FileDescriptor) getFdMethod.invoke(memoryFile);
+            return new SharedMemory(fd, size, memoryFile);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
     }
 
     public static ClassLoader InMemoryDexClassLoader(ByteBuffer[] buffers, ClassLoader parent) {
@@ -77,42 +81,54 @@ public final class SharedMemory implements Parcelable, Closeable {
         }
     }
 
-    public ByteBuffer mapReadOnly() throws Exception {
+    public ByteBuffer mapReadOnly() {
         return map(PROT_READ);
     }
 
-    public ByteBuffer mapReadWrite() throws Exception {
+    public ByteBuffer mapReadWrite() {
         return map(PROT_READ | PROT_WRITE);
     }
 
-    public ByteBuffer map(int prot) throws Exception {
+    public ByteBuffer map(int prot) {
         return map(prot, 0, mSize);
     }
 
-    public ByteBuffer map(int prot, int offset, int length) throws Exception {
-        Object os = getOs();
-        Method mmap = os.getClass().getMethod("mmap", long.class, long.class, int.class, int.class, FileDescriptor.class, long.class);
-        return (ByteBuffer) mmap.invoke(os, 0L, (long) length, prot, MAP_SHARED, mFileDescriptor, (long) offset);
-    }
-
-    public static void unmap(ByteBuffer buffer) throws Exception {
-        if (buffer == null || !buffer.isDirect()) return;
-        Object os = getOs();
-        Field addressField = java.nio.Buffer.class.getDeclaredField("address");
-        addressField.setAccessible(true);
-        long address = addressField.getLong(buffer);
-        Method munmap = os.getClass().getMethod("munmap", long.class, long.class);
-        munmap.invoke(os, address, (long) buffer.capacity());
-    }
-
-    public void setProtect(int prot) throws Exception {
-        Object os = getOs();
+    public ByteBuffer map(int prot, int offset, int length) {
         try {
-            Method ashmemSetProt = os.getClass().getMethod("ashmem_set_prot", FileDescriptor.class, int.class);
-            ashmemSetProt.invoke(os, mFileDescriptor, prot);
-        } catch (NoSuchMethodException e) {
-            Method ioctlInt = os.getClass().getMethod("ioctlInt", FileDescriptor.class, int.class, int.class);
-            ioctlInt.invoke(os, mFileDescriptor, ASHMEM_SET_PROT_MASK, prot);
+            Object os = getOs();
+            Method mmap = os.getClass().getMethod("mmap", long.class, long.class, int.class, int.class, FileDescriptor.class, long.class);
+            return (ByteBuffer) mmap.invoke(os, 0L, (long) length, prot, MAP_SHARED, mFileDescriptor, (long) offset);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static void unmap(ByteBuffer buffer) {
+        if (buffer == null || !buffer.isDirect()) return;
+        try {
+            Object os = getOs();
+            Field addressField = java.nio.Buffer.class.getDeclaredField("address");
+            addressField.setAccessible(true);
+            long address = addressField.getLong(buffer);
+            Method munmap = os.getClass().getMethod("munmap", long.class, long.class);
+            munmap.invoke(os, address, (long) buffer.capacity());
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public void setProtect(int prot) {
+        try {
+            Object os = getOs();
+            try {
+                Method ashmemSetProt = os.getClass().getMethod("ashmem_set_prot", FileDescriptor.class, int.class);
+                ashmemSetProt.invoke(os, mFileDescriptor, prot);
+            } catch (NoSuchMethodException e) {
+                Method ioctlInt = os.getClass().getMethod("ioctlInt", FileDescriptor.class, int.class, int.class);
+                ioctlInt.invoke(os, mFileDescriptor, ASHMEM_SET_PROT_MASK, prot);
+            }
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
         }
     }
 
@@ -155,4 +171,4 @@ public final class SharedMemory implements Parcelable, Closeable {
             return new SharedMemory[size];
         }
     };
-}
+    }
