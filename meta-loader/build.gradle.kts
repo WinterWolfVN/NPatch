@@ -6,14 +6,15 @@ plugins {
 
 android {
     defaultConfig {
-        multiDexEnabled = true 
+        multiDexEnabled = true
+    }
+    
     sourceSets {
         named("main") {
             java.srcDir("${rootProject.projectDir}/src") 
             exclude("android/os/**")
         }
     }
-}
 
     buildTypes {
         release {
@@ -31,14 +32,14 @@ androidComponents.onVariants { variant ->
     task<Copy>("copyDex$variantCapped") {
         dependsOn("assemble$variantCapped")
         val dexOutPath = if (variant.buildType == "release")
-            "$buildDir/intermediates/dex/$variantLowered/minify${variantCapped}WithR8" else
-            "$buildDir/intermediates/dex/$variantLowered/mergeDex$variantCapped"
+            "${layout.buildDirectory.get()}/intermediates/dex/$variantLowered/minify${variantCapped}WithR8" else
+            "${layout.buildDirectory.get()}/intermediates/dex/$variantLowered/mergeDex$variantCapped"
         from(dexOutPath)
         rename("classes.dex", "metaloader.dex")
         into("${rootProject.projectDir}/out/assets/${variant.name}/npatch")
     }
 
-    task("copy$variantCapped") {
+    tasks.register("copy$variantCapped") {
         dependsOn("copyDex$variantCapped")
 
         doLast {
