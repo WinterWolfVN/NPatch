@@ -19,13 +19,16 @@ public class AppComponentFactoryStub {
 
     public Activity instantiateActivity(ClassLoader cl, String className, Intent intent) {
         try { return (Activity) cl.loadClass(className).newInstance(); } 
-        catch (Throwable t) { throw new RuntimeException(t); }
+        catch (Throwable t) { throw new RuntimeException(t); }        
     }    
+    
+    static class ProviderStub extends ContentProvider {
         @Override public Cursor query(Uri u, String[] p, String s, String[] a, String o) { return null; }
         @Override public String getType(Uri u) { return null; }
         @Override public Uri insert(Uri u, ContentValues v) { return null; }
         @Override public int delete(Uri u, String s, String[] a) { return 0; }
-        @Override public int update(Uri u, ContentValues v, String s, String[] a) { return 0; }    
+        @Override public int update(Uri u, ContentValues v, String s, String[] a) { return 0; }
+    }                                                
 }
 
 final class AppEnvironment {
