@@ -17,7 +17,7 @@ android {
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    exclude("**/android/os/**")
+    exclude("**/android/app/**")
 }
 
 dependencies {
