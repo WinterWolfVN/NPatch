@@ -229,39 +229,36 @@ object NPackageManager {
                 val appInfos = apks.mapNotNull { uri ->
                     val src = DocumentFile.fromSingleUri(lspApp, uri) ?: return@mapNotNull null
                     val name = src.name ?: return@mapNotNull null
-                    
+
+                    // Nếu là .apks thì đọc base.apk từ stream để lấy thông tin
                     if (name.endsWith(".apks")) {
-                        val apksFile = lspApp.tmpApkDir.resolve(name)
-                        lspApp.contentResolver.openInputStream(uri)?.use { input ->
-                            apksFile.outputStream().use { input.copyTo(it) }
-                        }
                         var baseAppInfo: ApplicationInfo? = null
-                        ZipInputStream(apksFile.inputStream()).use { zip ->
-                            var entry = zip.nextEntry
-                            while (entry != null) {
-                                if (!entry.isDirectory && entry.name.endsWith(".apk")) {
-                                    val dst = lspApp.tmpApkDir.resolve(File(entry.name).name)
-                                    dst.outputStream().use { zip.copyTo(it) }
-                                    val info = lspApp.packageManager.getPackageArchiveInfo(dst.absolutePath, PackageManager.GET_META_DATA)?.applicationInfo
-                                    if (info != null) {
-                                        info.sourceDir = dst.absolutePath
-                                        if (File(entry.name).name == "base.apk") {
+                        lspApp.contentResolver.openInputStream(uri)?.use { input ->
+                            ZipInputStream(input).use { zip ->
+                                var entry = zip.nextEntry
+                                while (entry != null) {
+                                    if (!entry.isDirectory && entry.name == "base.apk") {
+                                        val tmp = File(lspApp.tmpApkDir, "base.apk")
+                                        tmp.outputStream().use { zip.copyTo(it) }
+                                        val info = lspApp.packageManager.getPackageArchiveInfo(tmp.absolutePath, PackageManager.GET_META_DATA)?.applicationInfo
+                                        if (info != null) {
+                                            info.sourceDir = tmp.absolutePath
                                             baseAppInfo = info
                                             if (primary == null) primary = info
-                                        } else {
-                                            splits.add(dst.absolutePath)
                                         }
+                                        tmp.delete()
+                                        break
                                     }
+                                    entry = zip.nextEntry
                                 }
-                                entry = zip.nextEntry
                             }
                         }
                         return@mapNotNull baseAppInfo?.let {
-                            it.splitSourceDirs = splits.toTypedArray()
-                            AppInfo(it, lspApp.packageManager.getApplicationLabel(it).toString(), apksFile.absolutePath)
+                            AppInfo(it, lspApp.packageManager.getApplicationLabel(it).toString(), uri.toString())
                         }
                     }
 
+                    // APK thường
                     val dst = lspApp.tmpApkDir.resolve(name)
                     lspApp.contentResolver.openInputStream(uri)?.use { input ->
                         dst.outputStream().use { output -> input.copyTo(output) }
