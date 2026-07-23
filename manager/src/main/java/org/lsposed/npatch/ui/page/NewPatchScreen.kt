@@ -135,7 +135,8 @@ fun NewPatchScreen(
                 when (id) {
                     ACTION_STORAGE -> {
                         storageLauncher.launch(arrayOf(
-                            "application/vnd.android.package-archive",                            
+                            "application/vnd.android.package-archive",
+                            "application/octet-stream",
                         ))
                         viewModel.dispatch(ViewAction.DoneInit)
                     }
