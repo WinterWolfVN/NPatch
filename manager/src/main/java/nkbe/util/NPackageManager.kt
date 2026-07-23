@@ -43,7 +43,7 @@ object NPackageManager {
     const val STATUS_USER_CANCELLED = -2
 
     @Parcelize
-    class AppInfo(val app: ApplicationInfo, val label: String) : Parcelable {
+    class AppInfo(val app: ApplicationInfo, val label: String, val apksPath: String? = null) : Parcelable {
         val isXposedModule: Boolean
             get() = app.metaData?.get("xposedminversion") != null
     }
@@ -228,7 +228,41 @@ object NPackageManager {
                 val splits = mutableListOf<String>()
                 val appInfos = apks.mapNotNull { uri ->
                     val src = DocumentFile.fromSingleUri(lspApp, uri) ?: return@mapNotNull null
-                    val dst = lspApp.tmpApkDir.resolve(src.name!!)
+                    val name = src.name ?: return@mapNotNull null
+                    
+                    if (name.endsWith(".apks")) {
+                        val apksFile = lspApp.tmpApkDir.resolve(name)
+                        lspApp.contentResolver.openInputStream(uri)?.use { input ->
+                            apksFile.outputStream().use { input.copyTo(it) }
+                        }
+                        var baseAppInfo: ApplicationInfo? = null
+                        ZipInputStream(apksFile.inputStream()).use { zip ->
+                            var entry = zip.nextEntry
+                            while (entry != null) {
+                                if (!entry.isDirectory && entry.name.endsWith(".apk")) {
+                                    val dst = lspApp.tmpApkDir.resolve(File(entry.name).name)
+                                    dst.outputStream().use { zip.copyTo(it) }
+                                    val info = lspApp.packageManager.getPackageArchiveInfo(dst.absolutePath, PackageManager.GET_META_DATA)?.applicationInfo
+                                    if (info != null) {
+                                        info.sourceDir = dst.absolutePath
+                                        if (File(entry.name).name == "base.apk") {
+                                            baseAppInfo = info
+                                            if (primary == null) primary = info
+                                        } else {
+                                            splits.add(dst.absolutePath)
+                                        }
+                                    }
+                                }
+                                entry = zip.nextEntry
+                            }
+                        }
+                        return@mapNotNull baseAppInfo?.let {
+                            it.splitSourceDirs = splits.toTypedArray()
+                            AppInfo(it, lspApp.packageManager.getApplicationLabel(it).toString(), apksFile.absolutePath)
+                        }
+                    }
+
+                    val dst = lspApp.tmpApkDir.resolve(name)
                     lspApp.contentResolver.openInputStream(uri)?.use { input ->
                         dst.outputStream().use { output -> input.copyTo(output) }
                     }
