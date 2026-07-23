@@ -95,7 +95,7 @@ fun NewPatchScreen(
             return@rememberLauncherForActivityResult
         }
         scope.launch {
-            NPackageManager.getAppInfoFromApks
+            NPackageManager.getAppInfoFromApks(apks)
                 .onSuccess {
                     viewModel.dispatch(ViewAction.ConfigurePatch(it.first()))
                 }
