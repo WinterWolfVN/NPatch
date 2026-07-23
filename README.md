@@ -40,6 +40,7 @@ You can contribute translation [here](https://crowdin.com/project/lspatch_jingma
 - [LSPosed](https://github.com/JingMatrix/LSPosed): Core framework
 - [Xpatch](https://github.com/WindySha/Xpatch): Fork source
 - [Apkzlib](https://android.googlesource.com/platform/tools/apkzlib): Repacking tool
+- [Android Developers](https://developer.android.com): Research documents
 
 ## License
 
