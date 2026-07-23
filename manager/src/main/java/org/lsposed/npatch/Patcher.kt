@@ -24,6 +24,17 @@ object Patcher {
         private val apkPaths: List<String>,
         private val embeddedModules: List<String>?
     ) {
+        fun resolvedApkPaths(): List<String> = apkPaths.map { path ->
+            if (!path.startsWith("content://")) return@map path
+            val uri = path.toUri()
+            val name = DocumentFile.fromSingleUri(lspApp, uri)?.name ?: return@map path
+            val dst = File(lspApp.tmpApkDir, name)
+            lspApp.contentResolver.openInputStream(uri)?.use { input ->
+                dst.outputStream().use { input.copyTo(it) }
+            }
+            dst.absolutePath
+        }
+
         fun toStringArray(): Array<String> {
             return buildList {
                 add("-o"); add(lspApp.tmpApkDir.absolutePath)
@@ -37,12 +48,12 @@ object Patcher {
                     add("-m"); add(it)
                 }
                 if (config.injectProvider) add("--provider")
-                if(injectDex) add("--injectdex")
+                if (injectDex) add("--injectdex")
                 if (config.useMicroG) add("--useMicroG")
                 if (!MyKeyStore.useDefault) {
                     addAll(arrayOf("-k", MyKeyStore.file.path, Configs.keyStorePassword, Configs.keyStoreAlias, Configs.keyStoreAliasPassword))
                 }
-                addAll(apkPaths)
+                addAll(resolvedApkPaths())
             }.toTypedArray()
         }
     }
@@ -87,7 +98,7 @@ object Patcher {
                 lspApp.contentResolver.openOutputStream(finalApks.uri)?.use { output ->
                     apksCache.inputStream().use { it.copyTo(output) }
                 } ?: throw IOException("Unable to open output stream: ${finalApks.uri}")
-                lspApp.targetApkFiles = apkFileList
+                lspApp.targetApkFiles = arrayListOf(apksCache)
                 logger.i("Packaged as APKS: $apksName")
             } else {
                 apkFileList.forEach { cachedApkFile ->
