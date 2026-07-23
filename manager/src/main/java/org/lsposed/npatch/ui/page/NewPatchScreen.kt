@@ -148,7 +148,7 @@ fun NewPatchScreen(
                     ACTION_INTENT_INSTALL -> {
                         data?.let { uri ->
                             scope.launch {
-                                NPackageManager.getAppInfoFromApks(NPackageManager.extractApksIfNeeded(listOf(uri))).onSuccess {
+                                NPackageManager.getAppInfoFromApks(listOf(uri)).onSuccess {
                                     viewModel.dispatch(ViewAction.ConfigurePatch(it.first()))
                                 }.onFailure {
                                     snackbarHost.showSnackbar(it.message ?: errorUnknown)
