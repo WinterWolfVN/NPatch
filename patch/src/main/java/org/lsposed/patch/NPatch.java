@@ -578,6 +578,11 @@ public class NPatch {
             property.addProvider(providerMap,"android.content.action.DOCUMENTS_PROVIDER");
 
         }
+        
+        HashMap<String, String> providerMap = new HashMap<>();
+        providerMap.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
+        providerMap.put("authorities", ".ProviderStub");   
+        providerMap.put("exported", "false");
 
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             new ManifestEditor(is, os, property).processManifest();
