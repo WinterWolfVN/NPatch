@@ -52,13 +52,22 @@ public class LSPAppComponentFactoryStub extends AppComponentFactory {
     public static final class ProviderStub extends ContentProvider {
         @Override
         public boolean onCreate() {
+            android.util.Log.e("NPatch", "ProviderStub.onCreate() called");
             Context c = getContext();
+            android.util.Log.e("NPatch", "Context: " + c);
             if (c != null) {
+                android.util.Log.e("NPatch", "Calling initEnv");
                 AppComponentFactory.initEnv(c.getClassLoader(), c);
-                try { Class.forName("org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub", true, c.getClassLoader()); } catch (Throwable ignored) {}
-            }
+                android.util.Log.e("NPatch", "Calling Class.forName");
+            try { 
+                Class.forName("org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub", true, c.getClassLoader());
+                android.util.Log.e("NPatch", "Class.forName success");
+           } catch (Throwable t) {
+                android.util.Log.e("NPatch", "Class.forName failed", t);
+           }
+       }
             return true;
-        }
+  }
         @Override public Cursor query(Uri u, String[] p, String s, String[] a, String o) { return null; }
         @Override public String getType(Uri u) { return null; }
         @Override public Uri insert(Uri u, ContentValues v) { return null; }
