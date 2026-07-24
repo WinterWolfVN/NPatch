@@ -295,7 +295,7 @@ public class NPatch {
                 // ContentProvider 
                 HashMap<String, String> providerMap = new HashMap<>();
                 providerMap.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
-                providerMap.put("authorities", targetPackage + ".ProviderStub");   
+                providerMap.put("authorities", packageName + ".ProviderStub");   
                 providerMap.put("exported", "false");
                 providerMap.put("initOrder", "999");
                 logger.d("original appComponentFactory class: " + appComponentFactory);
