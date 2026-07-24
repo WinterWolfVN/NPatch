@@ -13,6 +13,7 @@ import org.lsposed.patch.util.Logger
 import java.io.File
 import java.io.IOException
 import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 object Patcher {
@@ -24,15 +25,33 @@ object Patcher {
         private val apkPaths: List<String>,
         private val embeddedModules: List<String>?
     ) {
-        fun resolvedApkPaths(): List<String> = apkPaths.map { path ->
-            if (!path.startsWith("content://")) return@map path
+        fun resolvedApkPaths(): List<String> = apkPaths.flatMap { path ->
+            if (!path.startsWith("content://")) return@flatMap listOf(path)
             val uri = path.toUri()
-            val name = DocumentFile.fromSingleUri(lspApp, uri)?.name ?: return@map path
-            val dst = File(lspApp.tmpApkDir, name)
-            lspApp.contentResolver.openInputStream(uri)?.use { input ->
-                dst.outputStream().use { input.copyTo(it) }
+            val name = DocumentFile.fromSingleUri(lspApp, uri)?.name ?: return@flatMap listOf(path)
+            if (name.endsWith(".apks")) {                
+                val extracted = mutableListOf<String>()
+                lspApp.contentResolver.openInputStream(uri)?.use { input ->
+                    ZipInputStream(input).use { zip ->
+                        var entry = zip.nextEntry
+                        while (entry != null) {
+                            if (!entry.isDirectory && entry.name.endsWith(".apk")) {
+                                val dst = File(lspApp.tmpApkDir, File(entry.name).name)
+                                dst.outputStream().use { zip.copyTo(it) }
+                                extracted.add(dst.absolutePath)
+                            }
+                            entry = zip.nextEntry
+                        }
+                    }
+                }
+                extracted
+            } else {               
+                val dst = File(lspApp.tmpApkDir, name)
+                lspApp.contentResolver.openInputStream(uri)?.use { input ->
+                    dst.outputStream().use { input.copyTo(it) }
+                }
+                listOf(dst.absolutePath)
             }
-            dst.absolutePath
         }
 
         fun toStringArray(): Array<String> {
@@ -98,7 +117,7 @@ object Patcher {
                 lspApp.contentResolver.openOutputStream(finalApks.uri)?.use { output ->
                     apksCache.inputStream().use { it.copyTo(output) }
                 } ?: throw IOException("Unable to open output stream: ${finalApks.uri}")
-                lspApp.targetApkFiles = apkFileList
+                lspApp.targetApkFiles = arrayListOf(apksCache)
                 logger.i("Packaged as APKS: $apksName")
             } else {
                 apkFileList.forEach { cachedApkFile ->
@@ -114,4 +133,3 @@ object Patcher {
         }
     }
 }
-
