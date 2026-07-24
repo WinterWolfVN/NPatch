@@ -292,6 +292,12 @@ public class NPatch {
                 appComponentFactory = pair.appComponentFactory;
                 minSdkVersion = pair.minSdkVersion;
                 packageName = pair.packageName;
+                // ContentProvider 
+                HashMap<String, String> providerMap = new HashMap<>();
+                providerMap.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
+                providerMap.put("authorities", targetPackage + ".ProviderStub");   
+                providerMap.put("exported", "false");
+                providerMap.put("initOrder", "999");
                 logger.d("original appComponentFactory class: " + appComponentFactory);
                 logger.d("original minSdkVersion: " + minSdkVersion);
 
@@ -578,11 +584,6 @@ public class NPatch {
             property.addProvider(providerMap,"android.content.action.DOCUMENTS_PROVIDER");
 
         }
-        
-        HashMap<String, String> providerMap = new HashMap<>();
-        providerMap.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
-        providerMap.put("authorities", ".ProviderStub");   
-        providerMap.put("exported", "false");
 
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             new ManifestEditor(is, os, property).processManifest();
