@@ -291,16 +291,9 @@ public class NPatch {
                     throw new PatchError("Failed to parse AndroidManifest.xml");
                 appComponentFactory = pair.appComponentFactory;
                 minSdkVersion = pair.minSdkVersion;
-                packageName = pair.packageName;
-                // ContentProvider 
-                HashMap<String, String> providerMap = new HashMap<>();
-                providerMap.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
-                providerMap.put("authorities", packageName + ".ProviderStub");   
-                providerMap.put("exported", "false");
-                providerMap.put("initOrder", "999");
+                packageName = pair.packageName;                
                 logger.d("original appComponentFactory class: " + appComponentFactory);
                 logger.d("original minSdkVersion: " + minSdkVersion);
-
                 if (newPackage == null || newPackage.isEmpty()) {
                     newPackage = pair.packageName;
                 }
@@ -585,6 +578,15 @@ public class NPatch {
 
         }
 
+       private void injectProvider(ManifestEditor editor, String packageName) {
+           HashMap<String, String> provider = new HashMap<>();
+           providerMap.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
+           providerMap.put("authorities", packageName + ".ProviderStub");   
+           providerMap.put("exported", "false");
+           providerMap.put("initOrder", "999");   
+           editor.addProvider(provider);
+}
+       
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             new ManifestEditor(is, os, property).processManifest();
             return os.toByteArray();
