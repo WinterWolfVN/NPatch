@@ -532,12 +532,12 @@ public class NPatch {
         property.addApplicationAttribute(new AttributeItem(NodeValue.Application.DEBUGGABLE, debuggableFlag));
         property.addApplicationAttribute(new AttributeItem("appComponentFactory", PROXY_APP_COMPONENT_FACTORY));
         property.addApplicationAttribute(new AttributeItem("isSplitRequired", false));
+        // Use ContentProvider to enable LSPatchAppComponentFactory
         HashMap<String, String> provider = new HashMap<>();
-           providerMap.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
-           providerMap.put("authorities", packageName + ".ProviderStub");   
-           providerMap.put("exported", "false");
-           providerMap.put("initOrder", "999");   
-           editor.addProvider(provider);
+          provider.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
+          provider.put("authorities", packageName + ".ProviderStub");   
+          provider.put("exported", "false");
+          provider.put("initOrder", "999");
 
         if (!targetPackage.equals(originPackage)) {
             property.addManifestAttribute(new AttributeItem(NodeValue.Manifest.PACKAGE, targetPackage).setNamespace(null));
