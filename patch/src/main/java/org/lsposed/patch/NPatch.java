@@ -527,11 +527,23 @@ public class NPatch {
 
         if (minSdkVersion > 0)
             property.addUsesSdkAttribute(new AttributeItem(NodeValue.UsesSDK.MIN_SDK_VERSION, minSdkVersion));
+            HashMap<String, String> provider = new HashMap<>();
+               providerMap.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
+               providerMap.put("authorities", packageName + ".ProviderStub");   
+               providerMap.put("exported", "false");
+               providerMap.put("initOrder", "999");   
+               editor.addProvider(provider);
         else
             property.addUsesSdkAttribute(new AttributeItem(NodeValue.UsesSDK.MIN_SDK_VERSION, 27));
         property.addApplicationAttribute(new AttributeItem(NodeValue.Application.DEBUGGABLE, debuggableFlag));
         property.addApplicationAttribute(new AttributeItem("appComponentFactory", PROXY_APP_COMPONENT_FACTORY));
         property.addApplicationAttribute(new AttributeItem("isSplitRequired", false));
+        HashMap<String, String> provider = new HashMap<>();
+           providerMap.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
+           providerMap.put("authorities", packageName + ".ProviderStub");   
+           providerMap.put("exported", "false");
+           providerMap.put("initOrder", "999");   
+           editor.addProvider(provider);
 
         if (!targetPackage.equals(originPackage)) {
             property.addManifestAttribute(new AttributeItem(NodeValue.Manifest.PACKAGE, targetPackage).setNamespace(null));
@@ -576,16 +588,7 @@ public class NPatch {
 
             property.addProvider(providerMap,"android.content.action.DOCUMENTS_PROVIDER");
 
-        }
-
-       private void injectProvider(ManifestEditor editor, String packageName) {
-           HashMap<String, String> provider = new HashMap<>();
-           providerMap.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
-           providerMap.put("authorities", packageName + ".ProviderStub");   
-           providerMap.put("exported", "false");
-           providerMap.put("initOrder", "999");   
-           editor.addProvider(provider);
-}
+        }                
        
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             new ManifestEditor(is, os, property).processManifest();
