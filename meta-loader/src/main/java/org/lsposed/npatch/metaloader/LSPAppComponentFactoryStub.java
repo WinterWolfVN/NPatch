@@ -46,7 +46,7 @@ public class LSPAppComponentFactoryStub extends AppComponentFactory {
         Log.i(TAG, "Skip loading libnpatch.so for appZygote");
     } else {
         bootstrap();
-        AppComponentFactory.sInstance = new LSPAppComponentFactoryStub();
+        AppComponentFactoryStub.sInstance = new LSPAppComponentFactoryStub();
     }
 }
 
