@@ -2,63 +2,70 @@ package android.app;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
+
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
-public class AppComponentFactoryStub {
-    public static AppComponentFactoryStub sInstance = new AppComponentFactoryStub();
+public class AppComponentFactoryStub extends Application {
 
-    public static void initEnv(ClassLoader cl, Context c) {
-        AppEnvironment.init(cl, c);
-    }
+    private static final String TAG = "NPatch-AppStub";
 
-    static ClassLoader getCl(ClassLoader original) {
-        return AppEnvironment.cl(original);
-    }
-
-    public Application instantiateApplication(ClassLoader cl, String className) {
-        try { return (Application) getCl(cl).loadClass(className).newInstance(); } 
-        catch (Throwable t) { throw new RuntimeException(t); }
-    }
-
-    public Activity instantiateActivity(ClassLoader cl, String className, Intent intent) {
-        try { return (Activity) getCl(cl).loadClass(className).newInstance(); } 
-        catch (Throwable t) { throw new RuntimeException(t); }
-    }
-
-    static final class AppEnvironment {
-        private static ClassLoader loader;
-
-        static void init(ClassLoader cl, Context c) {
-            loader = cl;
-            hook();
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        try {
+            hookInstrumentation(base.getClassLoader());
+        } catch (Throwable e) {
+            Log.e(TAG, "Unable to hook instrumentation", e);
         }
+    }
 
-        static ClassLoader cl(ClassLoader original) { 
-            return loader != null ? loader : original; 
+    private void hookInstrumentation(ClassLoader classLoader) {
+        try {
+            Object activityThread = currentActivityThread();
+            Field instrumentationField = findField(activityThread.getClass(), "mInstrumentation");
+            Instrumentation original = (Instrumentation) instrumentationField.get(activityThread);
+            Instrumentation proxy = new InstrumentationProxy(original, classLoader);
+            instrumentationField.set(activityThread, proxy);
+        } catch (Throwable e) {
+            Log.e(TAG, "Unable to hook instrumentation", e);
         }
+    }
 
-        private static void hook() {
+    private static Object currentActivityThread() throws Exception {
+        Class<?> activityThread = Class.forName("android.app.ActivityThread");
+        Method current = activityThread.getDeclaredMethod("currentActivityThread");
+        current.setAccessible(true);
+        return current.invoke(null);
+    }
+
+    private static Field findField(Class<?> type, String name) throws NoSuchFieldException {
+        Class<?> current = type;
+        while (current != null) {
             try {
-                Object at = Class.forName("android.app.ActivityThread").getDeclaredMethod("currentActivityThread").invoke(null);
-                Field f = at.getClass().getDeclaredField("mInstrumentation");
-                f.setAccessible(true);
-                f.set(at, new Proxy((Instrumentation) f.get(at)));
-            } catch (Throwable ignored) {}
+                Field field = current.getDeclaredField(name);
+                field.setAccessible(true);
+                return field;
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            }
+        }
+        throw new NoSuchFieldException(name);
+    }
+
+    private static class InstrumentationProxy extends Instrumentation {
+        private final Instrumentation base;
+        private final ClassLoader classLoader;
+
+        InstrumentationProxy(Instrumentation base, ClassLoader classLoader) {
+            this.base = base;
+            this.classLoader = classLoader;
         }
 
-        static final class Proxy extends Instrumentation {
-            private final Instrumentation base;
-            Proxy(Instrumentation base) { this.base = base; }
-
-            @Override
-            public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-                return AppComponentFactoryStub.sInstance.instantiateActivity(getCl(cl != null ? cl : base.getContext().getClassLoader()), className, intent);
-            }
-
-            @Override
-            public Application newApplication(ClassLoader cl, String className, Context context) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-                return AppComponentFactoryStub.sInstance.instantiateApplication(getCl(cl != null ? cl : context.getClassLoader()), className);
-            }
+        @Override
+        public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+            return base.newActivity(classLoader, className, intent);
         }
     }
-}
+                }
