@@ -37,7 +37,7 @@ import kotlin.coroutines.suspendCoroutine
 
 object NPackageManager {
 
-    private const val TAG = "NPackageManager"
+    private const val TAG = "LSPPackageManager"
     private const val SETTINGS_CATEGORY = "de.robv.android.xposed.category.MODULE_SETTINGS"
 
     const val STATUS_USER_CANCELLED = -2
@@ -197,30 +197,6 @@ object NPackageManager {
         return Pair(status, message)
     }
 
-    suspend fun extractApksIfNeeded(uris: List<Uri>): List<Uri> {
-        if (uris.size != 1) return uris
-        val uri = uris.first()
-        val name = DocumentFile.fromSingleUri(lspApp, uri)?.name ?: return uris
-        if (!name.endsWith(".apks")) return uris
-        return withContext(Dispatchers.IO) {
-            val extracted = mutableListOf<Uri>()
-            lspApp.contentResolver.openInputStream(uri)?.use { input ->
-                ZipInputStream(input).use { zip ->
-                    var entry = zip.nextEntry
-                    while (entry != null) {
-                        if (!entry.isDirectory && entry.name.endsWith(".apk")) {
-                            val dst = lspApp.tmpApkDir.resolve(File(entry.name).name)
-                            dst.outputStream().use { zip.copyTo(it) }
-                            extracted.add(dst.toUri())
-                        }
-                        entry = zip.nextEntry
-                    }
-                }
-            }
-            if (extracted.isEmpty()) uris else extracted
-        }
-    }
-
     suspend fun getAppInfoFromApks(apks: List<Uri>): Result<List<AppInfo>> {
         return withContext(Dispatchers.IO) {
             runCatching {
@@ -230,7 +206,7 @@ object NPackageManager {
                     val src = DocumentFile.fromSingleUri(lspApp, uri) ?: return@mapNotNull null
                     val name = src.name ?: return@mapNotNull null
 
-                    // Nếu là .apks thì đọc base.apk từ stream để lấy thông tin
+                    // APKs
                     if (name.endsWith(".apks")) {
                         var baseAppInfo: ApplicationInfo? = null
                         lspApp.contentResolver.openInputStream(uri)?.use { input ->
@@ -246,7 +222,6 @@ object NPackageManager {
                                             baseAppInfo = info
                                             if (primary == null) primary = info
                                         }
-                                        tmp.delete()
                                         break
                                     }
                                     entry = zip.nextEntry
@@ -258,7 +233,7 @@ object NPackageManager {
                         }
                     }
 
-                    // APK thường
+                    // APK 
                     val dst = lspApp.tmpApkDir.resolve(name)
                     lspApp.contentResolver.openInputStream(uri)?.use { input ->
                         dst.outputStream().use { output -> input.copyTo(output) }
@@ -276,7 +251,7 @@ object NPackageManager {
                 if (appInfos.isEmpty()) throw IOException("No apks")
                 appInfos
             }.onFailure {
-                cleanTmpApkDir()
+                Log.e(TAG, "getAppInfoFromApks failed", it)
             }
         }
     }
