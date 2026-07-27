@@ -58,7 +58,7 @@ public class LSPAppComponentFactoryStub extends AppComponentFactory {
             android.util.Log.e("NPatch", "Context: " + c);
             if (c != null) {
                 android.util.Log.e("NPatch", "Calling initEnv");
-                AppComponentFactory.initEnv(c.getClassLoader(), c);
+                AppComponentFactoryStub.initEnv(c.getClassLoader(), c);
                 android.util.Log.e("NPatch", "Calling Class.forName");
             try { 
                 Class.forName("org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub", true, c.getClassLoader());
