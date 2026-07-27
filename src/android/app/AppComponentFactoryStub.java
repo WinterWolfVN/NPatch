@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import java.lang.reflect.Field;
 
-public class AppComponentFactory {
+public class AppComponentFactoryStub {
     public static AppComponentFactory sInstance = new AppComponentFactory();
 
     public static void initEnv(ClassLoader cl, Context c) {
