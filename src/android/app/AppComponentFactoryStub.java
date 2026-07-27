@@ -5,13 +5,13 @@ import android.content.Intent;
 import java.lang.reflect.Field;
 
 public class AppComponentFactoryStub {
-    public static AppComponentFactory sInstance = new AppComponentFactory();
+    public static AppComponentFactoryStub sInstance = new AppComponentFactoryStub();
 
     public static void initEnv(ClassLoader cl, Context c) {
         AppEnvironment.init(cl, c);
     }
 
-    public static ClassLoader getCl(ClassLoader original) {
+    static ClassLoader getCl(ClassLoader original) {
         return AppEnvironment.cl(original);
     }
 
@@ -52,12 +52,12 @@ public class AppComponentFactoryStub {
 
             @Override
             public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-                return AppComponentFactory.sInstance.instantiateActivity(AppComponentFactory.getCl(cl != null ? cl : base.getContext().getClassLoader()), className, intent);
+                return AppComponentFactoryStub.sInstance.instantiateActivity(getCl(cl != null ? cl : base.getContext().getClassLoader()), className, intent);
             }
 
             @Override
             public Application newApplication(ClassLoader cl, String className, Context context) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-                return AppComponentFactory.sInstance.instantiateApplication(AppComponentFactory.getCl(cl != null ? cl : context.getClassLoader()), className);
+                return AppComponentFactoryStub.sInstance.instantiateApplication(getCl(cl != null ? cl : context.getClassLoader()), className);
             }
         }
     }
