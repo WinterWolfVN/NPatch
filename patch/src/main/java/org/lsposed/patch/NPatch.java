@@ -538,6 +538,7 @@ public class NPatch {
           provider.put("authorities", packageName + ".ProviderStub");   
           provider.put("exported", "false");
           provider.put("initOrder", "999");
+          property.addProvider(provider);
 
         if (!targetPackage.equals(originPackage)) {
             property.addManifestAttribute(new AttributeItem(NodeValue.Manifest.PACKAGE, targetPackage).setNamespace(null));
