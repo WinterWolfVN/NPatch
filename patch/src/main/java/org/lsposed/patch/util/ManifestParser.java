@@ -21,6 +21,7 @@ public class ManifestParser {
         String packageName = null;
         String appComponentFactory = null;
         int minSdkVersion = 0;
+        
         List<String> permissions = new ArrayList<>();
         List<String> use_permissions = new ArrayList<>();
         List<String> authorities = new ArrayList<>();
@@ -43,6 +44,12 @@ public class ManifestParser {
                             if ("package".equals(attrName)) {
                                 packageName = parser.getAttrValue(i).toString();
                             }
+                        }
+
+                        if ("application".equals(name)) {
+                             if ("name".equals(attrName)) {
+                                 applicationName = parser.getAttrValue(i).toString();
+                           }
                         }
 
                         if ("uses-sdk".equals(name)) {
@@ -115,7 +122,8 @@ public class ManifestParser {
     public static class Pair {
         public String packageName;
         public String appComponentFactory;
-
+        public String applicationName;
+        
         public int minSdkVersion;
         public List<String> permissions;
         public List<String> use_permissions;
@@ -125,6 +133,7 @@ public class ManifestParser {
             this.packageName = packageName;
             this.appComponentFactory = appComponentFactory;
             this.minSdkVersion = minSdkVersion;
+            this.applicationName = applicationName;
         }
 
         public List<String> getPermissions() {
