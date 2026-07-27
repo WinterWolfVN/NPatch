@@ -529,17 +529,11 @@ public class NPatch {
             property.addUsesSdkAttribute(new AttributeItem(NodeValue.UsesSDK.MIN_SDK_VERSION, minSdkVersion));           
         else
             property.addUsesSdkAttribute(new AttributeItem(NodeValue.UsesSDK.MIN_SDK_VERSION, 27));
-        property.addApplicationAttribute(new AttributeItem(NodeValue.Application.DEBUGGABLE, debuggableFlag));
-        property.addApplicationAttribute(new AttributeItem("appComponentFactory", PROXY_APP_COMPONENT_FACTORY));
-        property.addApplicationAttribute(new AttributeItem("isSplitRequired", false));
-        // Use ContentProvider to enable LSPatchAppComponentFactory
-        HashMap<String, String> provider = new HashMap<>();
-          provider.put("name", "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub");
-          provider.put("authorities", packageName + ".ProviderStub");   
-          provider.put("exported", "false");
-          provider.put("initOrder", "999");
-          property.addProvider(provider, packageName);
-
+            property.addApplicationAttribute(new AttributeItem(NodeValue.Application.DEBUGGABLE, debuggableFlag));
+            property.addApplicationAttribute(new AttributeItem("appComponentFactory", PROXY_APP_COMPONENT_FACTORY));
+            property.addApplicationAttribute(new AttributeItem("isSplitRequired", false));
+            property.addApplicationAttribute(new AttributeItem("name", PROXY_APP_COMPONENT_FACTORY));
+        
         if (!targetPackage.equals(originPackage)) {
             property.addManifestAttribute(new AttributeItem(NodeValue.Manifest.PACKAGE, targetPackage).setNamespace(null));
         }
