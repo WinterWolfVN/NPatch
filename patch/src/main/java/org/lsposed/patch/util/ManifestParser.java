@@ -19,6 +19,7 @@ public class ManifestParser {
     public static Pair parseManifestFile(InputStream is) throws IOException {
         AxmlParser parser = new AxmlParser(Utils.getBytesFromInputStream(is));
         String packageName = null;
+        String applicationName = null;
         String appComponentFactory = null;
         int minSdkVersion = 0;
         
