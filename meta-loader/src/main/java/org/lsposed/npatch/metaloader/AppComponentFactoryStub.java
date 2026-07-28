@@ -15,19 +15,27 @@ public class AppComponentFactoryStub extends Application {
     private static final String TAG = "NPatch-AppStub";
 
     @Override
-    protected void attachBaseContext(Context base) {
-        super.attachBaseContext(base);
+protected void attachBaseContext(Context base) {
+    super.attachBaseContext(base);
+    try {        
         Class<?> lspatchClass = Class.forName("org.lsposed.npatch.metaloader.LSPatchAppComponentFactoryStub");
-            Object lspatchInstance = lspatchClass.newInstance();                      
-            Method initMethod = lspatchClass.getDeclaredMethod("bootstrap", Context.class);
-            initMethod.setAccessible(true);
-            initMethod.invoke(lspatchInstance, base);
-        try {
-            hookInstrumentation(base.getClassLoader());
-        } catch (Throwable e) {
-            Log.e(TAG, "Unable to hook instrumentation", e);
-        }
+        Object lspatchInstance = lspatchClass.getDeclaredConstructor().newInstance();
+        Method initMethod = lspatchClass.getDeclaredMethod("bootstrap", Context.class);
+        initMethod.setAccessible(true);
+        initMethod.invoke(lspatchInstance, base);
+    } catch (ClassNotFoundException e) {
+        Log.w(TAG, "LSPatch stub not found, skipping bootstrap", e);
+    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
+        Log.e(TAG, "Failed to bootstrap LSPatch stub", e);
+    } catch (Throwable t) {
+        Log.e(TAG, "Unexpected error while attempting to bootstrap LSPatch stub", t);
     }
+    try {
+        hookInstrumentation(base.getClassLoader());
+    } catch (Throwable e) {
+        Log.e(TAG, "Unable to hook instrumentation", e);
+    }
+}
 
     private void hookInstrumentation(ClassLoader classLoader) {
         try {
