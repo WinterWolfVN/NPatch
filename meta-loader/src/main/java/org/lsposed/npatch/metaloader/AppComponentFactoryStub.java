@@ -1,11 +1,12 @@
 package org.lsposed.npatch.metaloader;
 
+import android.app.Activity;
 import android.app.Application;
 import android.app.Instrumentation;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -19,19 +20,11 @@ public class AppComponentFactoryStub extends Application {
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         try {
-            Class<?> lspatchClass = Class.forName("org.lsposed.npatch.metaloader.LSPatchAppComponentFactoryStub");
-            Object lspatchInstance = lspatchClass.getDeclaredConstructor().newInstance();
-            Method bootstrapMethod = lspatchClass.getDeclaredMethod("bootstrap");
-            bootstrapMethod.setAccessible(true);
-            bootstrapMethod.invoke(lspatchInstance);
-
+            Class.forName("org.lsposed.npatch.metaloader.LSPatchAppComponentFactoryStub");
             originalApplication = createOriginalApplication();
-            
             hookInstrumentation(base.getClassLoader());
-
             Object activityThread = currentActivityThread();
             replaceApplication(activityThread, originalApplication);
-
         } catch (Throwable e) {
             Log.e(TAG, "Unable to bootstrap", e);
             throw new IllegalStateException("Unable to bootstrap", e);
@@ -134,6 +127,6 @@ public class AppComponentFactoryStub extends Application {
         @Override
         public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
             return base.newActivity(classLoader, className, intent);
-        }        
+        }
     }
 }
