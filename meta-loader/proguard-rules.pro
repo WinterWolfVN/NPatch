@@ -12,7 +12,7 @@
 }
 -keep class com.android.** { *; 
 }
--keep class org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub$ProviderStub { *; }
+-keep class org.lsposed.npatch.metaloader.AppComponentFactoryStub { *; }
 
 -dontwarn androidx.annotation.NonNull
 -dontwarn androidx.annotation.Nullable
