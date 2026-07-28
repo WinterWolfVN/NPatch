@@ -6,7 +6,10 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
-
+import org.json.JSONObject;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import android.content.pm.ApplicationInfo;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -21,7 +24,7 @@ public class AppComponentFactoryStub extends Application {
         super.attachBaseContext(base);
         try {
             Class.forName("org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub");
-            originalApplication = createOriginalApplication();
+            originalApplication = createOriginalApplication(base);
             hookInstrumentation(base.getClassLoader());
             Object activityThread = currentActivityThread();
             replaceApplication(activityThread, originalApplication);
@@ -56,13 +59,47 @@ public class AppComponentFactoryStub extends Application {
         }
     }
 
-    private static Application createOriginalApplication() throws Exception {
-        Object activityThread = currentActivityThread();
-        Object boundApplication = findField(activityThread.getClass(), "mBoundApplication").get(activityThread);
-        Object loadedApk = findField(boundApplication.getClass(), "info").get(boundApplication);
-        Method makeApplication = findMethod(loadedApk.getClass(), "makeApplication", boolean.class, Instrumentation.class);
-        return (Application) makeApplication.invoke(loadedApk, false, null);
-    }
+        private static String getRealApplicationNameFromJson(Context base) {
+        InputStream is = null;
+        try {
+            is = base.getAssets().open("npatch/config.json");
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            int nRead;
+            byte[] data = new byte[1024];
+            while ((nRead = is.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            buffer.flush();
+            String jsonString = new String(buffer.toByteArray(), "UTF-8");
+            JSONObject jsonObject = new JSONObject(jsonString);
+            String appName = jsonObject.optString("applicationName", "");
+            if (!appName.isEmpty()) {
+                Log.i(TAG, "Successfully extracted original application name: " + appName);
+                return appName;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to parse npatch/config.json", e);
+        } finally {
+            if (is != null) {
+                try { is.close(); } catch (Exception ignored) {}
+            }
+        }
+        Log.w(TAG, "Original application name not found, falling back to default");
+        return "android.app.Application";
+        }
+
+        private static Application createOriginalApplication(Context base) throws Exception {
+            Object activityThread = currentActivityThread();
+            Object boundApplication = findField(activityThread.getClass(), "mBoundApplication").get(activityThread);
+            Object loadedApk = findField(boundApplication.getClass(), "info").get(boundApplication);
+            Field appInfoField = findField(loadedApk.getClass(), "mApplicationInfo");
+            ApplicationInfo appInfo = (ApplicationInfo) appInfoField.get(loadedApk);
+            appInfo.className = getRealApplicationNameFromJson(base);
+            Field mApplicationField = findField(loadedApk.getClass(), "mApplication");
+            mApplicationField.set(loadedApk, null);
+            Method makeApplication = findMethod(loadedApk.getClass(), "makeApplication", boolean.class, Instrumentation.class);
+            return (Application) makeApplication.invoke(loadedApk, false, null);
+        }
 
     private void replaceApplication(Object activityThread, Application original) throws Exception {
         Field initialApplication = findField(activityThread.getClass(), "mInitialApplication");
