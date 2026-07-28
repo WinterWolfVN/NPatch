@@ -15,6 +15,7 @@ public class PatchConfig {
     public final String managerPackageName;
     public final String newPackage;
     public final boolean useMicroG;
+    public final String applicationName; 
 
     public PatchConfig(
             boolean useManager,
@@ -27,7 +28,8 @@ public class PatchConfig {
             boolean injectProvider,
             boolean outputLog,
             String newPackage,
-            boolean useMicroG
+            boolean useMicroG,
+            String applicationName        
     ) {
         this.useManager = useManager;
         this.debuggable = debuggable;
@@ -41,7 +43,8 @@ public class PatchConfig {
         this.managerPackageName = Constants.MANAGER_PACKAGE_NAME;
         this.newPackage = newPackage;
         this.outputLog = outputLog;
-        this.useMicroG = useMicroG;        
+        this.useMicroG = useMicroG;     
+        this.applicationName = applicationName; 
         this.lspConfig.sigBypassLevel = sigBypassLevel;
     }
 }
