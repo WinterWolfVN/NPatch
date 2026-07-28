@@ -22,13 +22,13 @@ public class AppComponentFactoryStub extends Application {
         try {
             Class<?> lspatchClass = Class.forName("org.lsposed.npatch.metaloader.LSPatchAppComponentFactoryStub");
             Object lspatchInstance = lspatchClass.getDeclaredConstructor().newInstance();
-            Method initMethod = lspatchClass.getDeclaredMethod("bootstrap", Context.class);
+            Method initMethod = lspatchClass.getDeclaredMethod("bootstrap");
             initMethod.setAccessible(true);
-            initMethod.invoke(lspatchInstance, base);
+            initMethod.invoke(lspatchInstance);
 
             originalApplication = createOriginalApplication();
 
-            Method attachMethod = Application.class.getDeclaredMethod("attach", Context.class);
+            Method attachMethod = Application.class.getDeclaredMethod("attachBaseContext", Context.class);
             attachMethod.setAccessible(true);
             attachMethod.invoke(originalApplication, base);
 
@@ -141,4 +141,4 @@ public class AppComponentFactoryStub extends Application {
             return base.newActivity(classLoader, className, intent);
         }
     }
-                }
+            }
