@@ -1,4 +1,4 @@
-package android.app;
+package org.lsposed.npatch.metaloader;
 
 import android.content.Context;
 import android.content.Intent;
