@@ -14,6 +14,11 @@ public class AppComponentFactoryStub extends Application {
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+        Class<?> lspatchClass = Class.forName("org.lsposed.npatch.metaloader.LSPatchAppComponentFactoryStub");
+            Object lspatchInstance = lspatchClass.newInstance();                      
+            Method initMethod = lspatchClass.getDeclaredMethod("bootstrap", Context.class);
+            initMethod.setAccessible(true);
+            initMethod.invoke(lspatchInstance, base);
         try {
             hookInstrumentation(base.getClassLoader());
         } catch (Throwable e) {
