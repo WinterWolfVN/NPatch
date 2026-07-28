@@ -13,6 +13,7 @@
 -keep class com.android.** { *; 
 }
 -keep class org.lsposed.npatch.metaloader.AppComponentFactoryStub { *; }
+-keep class org.lsposed.npatch.metaloader.AppComponentFactoryStub$InstrumentationProxy { *; }
 
 -dontwarn androidx.annotation.NonNull
 -dontwarn androidx.annotation.Nullable
