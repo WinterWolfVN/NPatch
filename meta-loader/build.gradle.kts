@@ -7,14 +7,7 @@ plugins {
 android {
     defaultConfig {
         multiDexEnabled = true
-    }
-    
-    sourceSets {
-        named("main") {
-            java.srcDir("${rootProject.projectDir}/src")             
-        }
-    }
-
+    }        
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -27,10 +20,6 @@ android {
 androidComponents.onVariants { variant ->
     val variantCapped = variant.name.replaceFirstChar { it.uppercase() }
     val variantLowered = variant.name.lowercase()
-
-tasks.withType<JavaCompile>().configureEach {
-    exclude("**/android/os/**")
-}
     tasks.register<Copy>("copyDex$variantCapped") {
     dependsOn("assemble$variantCapped")
     val dexOutPath = if (variant.buildType == "release")
