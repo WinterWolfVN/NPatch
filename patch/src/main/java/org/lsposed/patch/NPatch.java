@@ -128,7 +128,8 @@ public class NPatch {
     @Parameter(names = {"-m", "--embed"}, description = "Embed provided modules to apk")
     private List<String> modules = new ArrayList<>();
 
-    private String packageName;    
+    private String packageName;
+    private String applicationName;
 
     private static final String ANDROID_MANIFEST_XML = "AndroidManifest.xml";
     private static final String META_INF_PREFIX = "META-INF/";
