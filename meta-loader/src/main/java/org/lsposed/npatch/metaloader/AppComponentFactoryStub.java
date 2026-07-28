@@ -20,7 +20,7 @@ public class AppComponentFactoryStub extends Application {
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         try {
-            Class.forName("org.lsposed.npatch.metaloader.LSPatchAppComponentFactoryStub");
+            Class.forName("org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub");
             originalApplication = createOriginalApplication();
             hookInstrumentation(base.getClassLoader());
             Object activityThread = currentActivityThread();
