@@ -121,12 +121,42 @@ public class AppComponentFactoryStub extends Application {
 
         @Override
         public Application newApplication(ClassLoader cl, String className, Context context) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-            return base.newApplication(classLoader, className, context);
+            // Try the framework-provided classloader first, then fallback to the stored classLoader, then to context's loader
+            try {
+                return base.newApplication(cl, className, context);
+            } catch (ClassNotFoundException e1) {
+                Log.w(TAG, "newApplication: not found with provided classloader, trying fallback", e1);
+                ClassLoader fallback = classLoader != null ? classLoader : (context != null ? context.getClassLoader() : null);
+                if (fallback != null && fallback != cl) {
+                    try {
+                        return base.newApplication(fallback, className, context);
+                    } catch (ClassNotFoundException e2) {
+                        Log.w(TAG, "newApplication: not found with fallback classloader, rethrow", e2);
+                        throw e2;
+                    }
+                }
+                throw e1;
+            }
         }
 
         @Override
         public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-            return base.newActivity(classLoader, className, intent);
+            // Try the framework-provided classloader first, then fallback to the stored classLoader, then to thread context loader
+            try {
+                return base.newActivity(cl, className, intent);
+            } catch (ClassNotFoundException e1) {
+                Log.w(TAG, "newActivity: not found with provided classloader, trying fallback", e1);
+                ClassLoader fallback = classLoader != null ? classLoader : Thread.currentThread().getContextClassLoader();
+                if (fallback != null && fallback != cl) {
+                    try {
+                        return base.newActivity(fallback, className, intent);
+                    } catch (ClassNotFoundException e2) {
+                        Log.w(TAG, "newActivity: not found with fallback classloader, rethrow", e2);
+                        throw e2;
+                    }
+                }
+                throw e1;
+            }
         }
     }
 }
