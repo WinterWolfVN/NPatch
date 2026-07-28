@@ -291,8 +291,10 @@ public class NPatch {
                     throw new PatchError("Failed to parse AndroidManifest.xml");
                 appComponentFactory = pair.appComponentFactory;
                 minSdkVersion = pair.minSdkVersion;
-                packageName = pair.packageName;                
+                packageName = pair.packageName;  
+                applicationName = pair.applicationName;                
                 logger.d("original appComponentFactory class: " + appComponentFactory);
+                logger.d("original application class: " + applicationName);
                 logger.d("original minSdkVersion: " + minSdkVersion);
                 if (newPackage == null || newPackage.isEmpty()) {
                     newPackage = pair.packageName;
@@ -324,7 +326,7 @@ public class NPatch {
 
             logger.i("Patching apk...");
             // modify manifest
-            final var config = new PatchConfig(useManager, debuggableFlag, overrideVersionCode, overrideVersionCodeValue, sigbypassLevel, originalSignature, appComponentFactory, isInjectProvider, outputLog, newPackage, useMicroG);
+            final var config = new PatchConfig(useManager, debuggableFlag, overrideVersionCode, overrideVersionCodeValue, sigbypassLevel, originalSignature, appComponentFactory, isInjectProvider, outputLog, newPackage, useMicroG, applicationName);
             final var configBytes = new Gson().toJson(config).getBytes(StandardCharsets.UTF_8);
             final var metadata = Base64.getEncoder().encodeToString(configBytes);
             try (var is = new ByteArrayInputStream(modifyManifestFile(manifestEntry.open(), metadata, minSdkVersion, pair.packageName, newPackage, originalSignature))) {
