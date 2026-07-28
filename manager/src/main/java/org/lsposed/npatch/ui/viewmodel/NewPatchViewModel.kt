@@ -49,6 +49,7 @@ class NewPatchViewModel : ViewModel() {
     var injectProvider by mutableStateOf(false)
     var outputLog by mutableStateOf(true)
     var useMicroG by mutableStateOf(false)
+    var applicationName by mutableStateOf("")
     var embeddedModules = emptyList<AppInfo>()
 
     lateinit var patchApp: AppInfo
@@ -112,7 +113,8 @@ class NewPatchViewModel : ViewModel() {
         injectProvider,
         outputLog,
         newPackageName,
-        useMicroG
+        useMicroG,
+        applicationName
     )
     patchOptions = Patcher.Options(
         newPackageName = newPackageName,
