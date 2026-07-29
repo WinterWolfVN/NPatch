@@ -211,7 +211,7 @@ public class ZFile implements Closeable {
   private static final byte[] EOCD_SIGNATURE = new byte[] {0x06, 0x05, 0x4b, 0x50};
 
   /** Size of buffer for I/O operations based on available RAM. */
-  private static final int IO_BUFFER_SIZE = 1024 * 1024 * 15
+  private static final int IO_BUFFER_SIZE = 1024 * 1024 * 15;
 
   /**
    * When extensions request re-runs, we do maximum number of cycles until we decide to stop and
