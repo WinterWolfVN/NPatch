@@ -47,11 +47,11 @@ public class ManifestParser {
                             }
                         }
 
-                        if ("application".equals(name)) {
-                             if ("name".equals(attrName)) {
-                                 applicationName = parser.getAttrValue(i).toString();
-                           }
-                        }
+                        if ("application".equals(name)) {    
+                            if ("name".equals(attrName) || "android:name".equals(attrName) || attrNameRes == 0x01010003) {
+                                applicationName = parser.getAttrValue(i).toString();
+                            }
+                         }                         
 
                         if ("uses-sdk".equals(name)) {
                             if ("minSdkVersion".equals(attrName)) {
