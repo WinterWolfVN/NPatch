@@ -210,8 +210,19 @@ public class ZFile implements Closeable {
   /** Signature of the EOCD record. */
   private static final byte[] EOCD_SIGNATURE = new byte[] {0x06, 0x05, 0x4b, 0x50};
 
-  /** Size of buffer for I/O operations. */
-  private static final int IO_BUFFER_SIZE = 1024 * 1024 * 10;
+  /** Size of buffer for I/O operations based on available RAM. */
+  private static final int IO_BUFFER_SIZE = getBufferSize();
+
+  private static int getBufferSize() {
+    android.app.ActivityManager am = (android.app.ActivityManager)
+    android.app.Application.getProcessContext().getSystemService(android.content.Context.ACTIVITY_SERVICE);
+    android.app.ActivityManager.MemoryInfo memInfo = new android.app.ActivityManager.MemoryInfo();
+    am.getMemoryInfo(memInfo);
+    long totalRam = memInfo.totalMem / (1024 * 1024); // MB
+    if (totalRam >= 4096) return 1024 * 1024 * 20;      // 4GB+ → 20MB
+    else if (totalRam >= 3072) return 1024 * 1024 * 15; // 3GB+ → 15MB
+    else return 1024 * 1024 * 10;                        // 2GB  → 10MB
+  }
 
   /**
    * When extensions request re-runs, we do maximum number of cycles until we decide to stop and
