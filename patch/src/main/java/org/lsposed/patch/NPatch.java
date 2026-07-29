@@ -528,14 +528,17 @@ public class NPatch {
             property.addManifestAttribute(new AttributeItem(NodeValue.Manifest.VERSION_CODE, overrideVersionCodeValue));
         }
 
-        if (minSdkVersion > 0)
-            property.addUsesSdkAttribute(new AttributeItem(NodeValue.UsesSDK.MIN_SDK_VERSION, minSdkVersion));           
-        else
-            property.addUsesSdkAttribute(new AttributeItem(NodeValue.UsesSDK.MIN_SDK_VERSION, 27));
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            property.addUsesSdkAttribute(new AttributeItem(NodeValue.UsesSDK.MIN_SDK_VERSION, minSdkVersion));  
             property.addApplicationAttribute(new AttributeItem(NodeValue.Application.DEBUGGABLE, debuggableFlag));
             property.addApplicationAttribute(new AttributeItem("appComponentFactory", PROXY_APP_COMPONENT_FACTORY));
+            property.addApplicationAttribute(new AttributeItem("isSplitRequired", false));         
+        } else {        
+            property.addUsesSdkAttribute(new AttributeItem(NodeValue.UsesSDK.MIN_SDK_VERSION, minSdkVersion));  
+            property.addApplicationAttribute(new AttributeItem(NodeValue.Application.DEBUGGABLE, debuggableFlag));           
             property.addApplicationAttribute(new AttributeItem("isSplitRequired", false));
             property.addApplicationAttribute(new AttributeItem("name", "org.lsposed.npatch.metaloader.AppComponentFactoryStub"));
+        }
         
         if (!targetPackage.equals(originPackage)) {
             property.addManifestAttribute(new AttributeItem(NodeValue.Manifest.PACKAGE, targetPackage).setNamespace(null));
