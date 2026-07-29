@@ -129,7 +129,6 @@ public class NPatch {
     private List<String> modules = new ArrayList<>();
 
     private String packageName;
-    private String applicationName;
 
     private static final String ANDROID_MANIFEST_XML = "AndroidManifest.xml";
     private static final String META_INF_PREFIX = "META-INF/";
@@ -281,6 +280,7 @@ public class NPatch {
                 throw new PatchError("Provided file is not a valid apk");
 
             String newPackage = newPackageName;
+            String applicationName = applicationName;
 
             int minSdkVersion;
             // parse the app appComponentFactory full name from the manifest file
