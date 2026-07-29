@@ -27,6 +27,7 @@ import com.android.tools.build.apkzlib.zip.utils.ByteTracker;
 import com.android.tools.build.apkzlib.zip.utils.CloseableByteSource;
 import com.android.tools.build.apkzlib.zip.utils.CloseableDelegateByteSource;
 import com.android.tools.build.apkzlib.zip.utils.LittleEndianUtils;
+import android.app.ActivityManager
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
