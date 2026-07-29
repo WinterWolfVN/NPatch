@@ -13,6 +13,7 @@ import com.android.tools.build.apkzlib.zip.NestedZip;
 import com.android.tools.build.apkzlib.zip.StoredEntry;
 import com.android.tools.build.apkzlib.zip.ZFile;
 import com.android.tools.build.apkzlib.zip.ZFileOptions;
+import android.os.Build;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -528,7 +529,7 @@ public class NPatch {
             property.addManifestAttribute(new AttributeItem(NodeValue.Manifest.VERSION_CODE, overrideVersionCodeValue));
         }
 
-        if (android.os.Build.VERSION.SDK_INT >= 28) {
+        if (Build.VERSION.SDK_INT >= 28) {
             property.addUsesSdkAttribute(new AttributeItem(NodeValue.UsesSDK.MIN_SDK_VERSION, minSdkVersion));  
             property.addApplicationAttribute(new AttributeItem(NodeValue.Application.DEBUGGABLE, debuggableFlag));
             property.addApplicationAttribute(new AttributeItem("appComponentFactory", PROXY_APP_COMPONENT_FACTORY));
