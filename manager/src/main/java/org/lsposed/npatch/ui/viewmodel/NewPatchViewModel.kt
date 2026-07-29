@@ -48,8 +48,7 @@ class NewPatchViewModel : ViewModel() {
     var injectDex by mutableStateOf(true)
     var injectProvider by mutableStateOf(false)
     var outputLog by mutableStateOf(true)
-    var useMicroG by mutableStateOf(false)
-    var applicationName by mutableStateOf("")
+    var useMicroG by mutableStateOf(false)    
     var embeddedModules = emptyList<AppInfo>()
 
     lateinit var patchApp: AppInfo
