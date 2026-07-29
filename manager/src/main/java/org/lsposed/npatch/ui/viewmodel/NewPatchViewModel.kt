@@ -112,7 +112,8 @@ class NewPatchViewModel : ViewModel() {
         injectProvider,
         outputLog,
         newPackageName,
-        useMicroG        
+        useMicroG,
+        null
     )
     patchOptions = Patcher.Options(
         newPackageName = newPackageName,
