@@ -130,7 +130,7 @@ public class ManifestParser {
         public List<String> use_permissions;
         public List<String> authorities;
 
-        public Pair(String packageName, String appComponentFactory, int minSdkVersion) {
+        public Pair(String packageName, String applicationName, String appComponentFactory, int minSdkVersion) {
             this.packageName = packageName;
             this.appComponentFactory = appComponentFactory;
             this.minSdkVersion = minSdkVersion;
