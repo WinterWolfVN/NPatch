@@ -280,7 +280,7 @@ public class NPatch {
                 throw new PatchError("Provided file is not a valid apk");
 
             String newPackage = newPackageName;
-            String applicationName = "android.app.Application";
+            final String applicationName;
 
             int minSdkVersion;
             // parse the app appComponentFactory full name from the manifest file
