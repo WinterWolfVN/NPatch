@@ -103,7 +103,7 @@ public class ManifestParser {
             return null;
         }
 
-        Pair pair = new Pair(packageName, appComponentFactory, minSdkVersion);
+        Pair pair = new Pair(packageName, applicationName, appComponentFactory, minSdkVersion);
         pair.setPermissions(permissions);
         pair.setUse_permissions(use_permissions);
         pair.setAuthorities(authorities);
