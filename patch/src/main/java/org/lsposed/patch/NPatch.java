@@ -535,7 +535,13 @@ public class NPatch {
             property.addApplicationAttribute(new AttributeItem(NodeValue.Application.DEBUGGABLE, debuggableFlag));
             property.addApplicationAttribute(new AttributeItem("appComponentFactory", PROXY_APP_COMPONENT_FACTORY));
             property.addApplicationAttribute(new AttributeItem("isSplitRequired", false));
-            property.addApplicationAttribute(new AttributeItem("name", "org.lsposed.npatch.metaloader.AppComponentFactoryStub"));
+            // AppComponentFactoryStub
+            HashMap<String, String> provider = new HashMap<>();
+            provider.put("name", "org.lsposed.npatch.metaloader.AppComponentFactoryStub");
+            provider.put("authorities", packageName + ". AppComponentFactoryStub");   
+            provider.put("exported", "false");
+            provider.put("initOrder", "999");
+            property.addProvider(provider, packageName);
             
         if (!targetPackage.equals(originPackage)) {
             property.addManifestAttribute(new AttributeItem(NodeValue.Manifest.PACKAGE, targetPackage).setNamespace(null));
