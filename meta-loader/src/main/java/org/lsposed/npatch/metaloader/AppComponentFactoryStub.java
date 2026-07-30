@@ -33,7 +33,7 @@ public final class AppComponentFactoryStub extends ContentProvider {
             m.invoke(null);
             android.util.Log.e(TAG, "Bootstrap has been activated");
         } catch (Throwable ignored) {
-            android.util.Log.e(TAG, "Bug");
+            android.util.Log.e(TAG, "Bug"  + android.util.Log.getStackTraceString(t));
         }
     }
 
