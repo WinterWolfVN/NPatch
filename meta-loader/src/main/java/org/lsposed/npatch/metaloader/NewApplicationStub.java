@@ -29,7 +29,7 @@ public class NewApplicationStub extends Application {
         try {
             ClassLoader realClassLoader = base.getClassLoader();
             Thread.currentThread().setContextClassLoader(realClassLoader);
-            tring nativeLibDir = base.getApplicationInfo().nativeLibraryDir;
+            String nativeLibDir = base.getApplicationInfo().nativeLibraryDir;
             Class.forName("org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub");
             originalApplication = createOriginalApplication(base);
             hookInstrumentation(base.getClassLoader());
