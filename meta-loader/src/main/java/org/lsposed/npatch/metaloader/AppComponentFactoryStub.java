@@ -125,18 +125,18 @@ public class AppComponentFactoryStub extends Application {
         try {
             String appName = getRealApplicationNameFromJson(base);
             Log.d(TAG, "Original app name from config: " + appName);
-            if ("android.app.Application".equals(appName)) {
-                appInfo.className = null;
-            } else {
-                appInfo.className = appName;
-                }
-            }
             Object activityThread = currentActivityThread();
             Object boundApplication = findField(activityThread.getClass(), "mBoundApplication").get(activityThread);
             Object loadedApk = findField(boundApplication.getClass(), "info").get(boundApplication);
             Field appInfoField = findField(loadedApk.getClass(), "mApplicationInfo");
             ApplicationInfo appInfo = (ApplicationInfo) appInfoField.get(loadedApk);
+        if ("android.app.Application".equals(appName) || appName == null || appName.isEmpty()) {
+            Log.d(TAG, "Using default android.app.Application");
+            appInfo.className = null;
+        } else {
+            Log.d(TAG, "Using original Application: " + appName);
             appInfo.className = appName;
+        }
             Field mApplicationField = findField(loadedApk.getClass(), "mApplication");
             mApplicationField.set(loadedApk, null);
             Method makeApplication = findMethod(loadedApk.getClass(), "makeApplication", boolean.class, Instrumentation.class);
@@ -144,7 +144,7 @@ public class AppComponentFactoryStub extends Application {
         } catch (Exception e) {
               Log.e(TAG, "Failed to create application", e);
               throw e;
-        }        
+        }
     }
 
     private void replaceApplication(Object activityThread, Application original) throws Exception {
