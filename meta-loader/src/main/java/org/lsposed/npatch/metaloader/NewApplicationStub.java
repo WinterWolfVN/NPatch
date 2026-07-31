@@ -16,7 +16,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
 
-public class AppComponentFactoryStub extends Application {
+public class NewApplicationStub extends Application {
 
     private static final String TAG = "NPatch-Metaloader";
     private Application originalApplication;
@@ -27,6 +27,9 @@ public class AppComponentFactoryStub extends Application {
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         try {
+            ClassLoader realClassLoader = base.getClassLoader();
+            Thread.currentThread().setContextClassLoader(realClassLoader);
+            tring nativeLibDir = base.getApplicationInfo().nativeLibraryDir;
             Class.forName("org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub");
             originalApplication = createOriginalApplication(base);
             hookInstrumentation(base.getClassLoader());
