@@ -39,6 +39,7 @@ public class LSPAppComponentFactoryStub {
     public static byte[] dex;
 
     static {
+    return super.instantiateProvider(cl, className);
     final boolean appZygote = ActivityThread.currentActivityThread() == null;
     if (appZygote) {
         Log.i(TAG, "Skip loading libnpatch.so for appZygote");
