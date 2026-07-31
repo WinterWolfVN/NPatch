@@ -31,15 +31,14 @@ import java.util.Objects;
 import java.util.zip.ZipFile;
 
 @SuppressLint("UnsafeDynamicallyLoadedCode")
-public class LSPAppComponentFactoryStub {
+public class LSPAppComponentFactoryStub {    
 
     private static final String TAG = "NPatch-MetaLoader";
     private static final Map<String, String> archToLib = new HashMap<String, String>(4);
 
     public static byte[] dex;
 
-    static {
-    return super.instantiateProvider(cl, className);
+    static {    
     final boolean appZygote = ActivityThread.currentActivityThread() == null;
     if (appZygote) {
         Log.i(TAG, "Skip loading libnpatch.so for appZygote");
@@ -135,5 +134,5 @@ public class LSPAppComponentFactoryStub {
         while (-1 != (n = is.read(buffer))) {
             os.write(buffer, 0, n);
         }
-    }
+    }    
     }
