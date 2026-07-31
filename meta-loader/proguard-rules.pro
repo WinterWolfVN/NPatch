@@ -12,8 +12,8 @@
 }
 -keep class com.android.** { *; 
 }
--keep class org.lsposed.npatch.metaloader.AppComponentFactoryStub { *; }
--keep class org.lsposed.npatch.metaloader.AppComponentFactoryStub$InstrumentationProxy { *; }
+-keep class org.lsposed.npatch.metaloader.NewApplicationStub { *; }
+-keep class org.lsposed.npatch.metaloader.NewApplicationStub$InstrumentationProxy { *; }
 
 -dontwarn androidx.annotation.NonNull
 -dontwarn androidx.annotation.Nullable
