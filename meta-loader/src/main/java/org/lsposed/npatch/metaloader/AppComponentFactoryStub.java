@@ -24,7 +24,7 @@ public final class AppComponentFactoryStub extends ContentProvider {
         try {
             Class<?> cls = Class.forName(
                     "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub",
-                    false,
+                    true,
                     context.getClassLoader()                    
             );
             android.util.Log.e(TAG, "LSPAppComponentFactoryStub has been activated");
