@@ -5,11 +5,13 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.util.Log;
+
 import org.json.JSONObject;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import android.content.pm.ApplicationInfo;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -20,7 +22,6 @@ public class AppComponentFactoryStub extends Application {
     private Application originalApplication;
     private static volatile boolean bootstrapComplete = false;
     private static final Object bootstrapLock = new Object();
-    
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -32,14 +33,14 @@ public class AppComponentFactoryStub extends Application {
             Object activityThread = currentActivityThread();
             replaceApplication(activityThread, originalApplication);
             synchronized (bootstrapLock) {
-            bootstrapComplete = true;
-            bootstrapLock.notifyAll();
+                bootstrapComplete = true;
+                bootstrapLock.notifyAll();
             }
             Log.i(TAG, "Bootstrap complete");
         } catch (Throwable e) {
             synchronized (bootstrapLock) {
-            bootstrapComplete = true;
-            bootstrapLock.notifyAll();
+                bootstrapComplete = true;
+                bootstrapLock.notifyAll();
             }
             Log.e(TAG, "Unable to bootstrap", e);
             throw new IllegalStateException("Unable to bootstrap", e);
@@ -53,27 +54,27 @@ public class AppComponentFactoryStub extends Application {
         }
         originalApplication.onCreate();
     }
-    
+
     public static void ensureBootstrapComplete() {
         if (bootstrapComplete) {
             return;
-        }    
-    synchronized (bootstrapLock) {
-        if (bootstrapComplete) {
-            return;
-        }        
-        try {
-            Log.d(TAG, "Waiting for bootstrap to complete...");
-            bootstrapLock.wait(5000);             
-            if (!bootstrapComplete) {
-                Log.w(TAG, "Bootstrap timeout reached!");
+        }
+        synchronized (bootstrapLock) {
+            if (bootstrapComplete) {
+                return;
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            Log.w(TAG, "Bootstrap wait interrupted", e);
+            try {
+                Log.d(TAG, "Waiting for bootstrap to complete...");
+                bootstrapLock.wait(5000);
+                if (!bootstrapComplete) {
+                    Log.w(TAG, "Bootstrap timeout reached!");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                Log.w(TAG, "Bootstrap wait interrupted", e);
+            }
         }
     }
-}
 
     @Override
     public Context getApplicationContext() {
@@ -97,8 +98,8 @@ public class AppComponentFactoryStub extends Application {
         try {
             is = base.getAssets().open("npatch/config.json");
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            int nRead;
             byte[] data = new byte[1024];
+            int nRead;
             while ((nRead = is.read(data, 0, data.length)) != -1) {
                 buffer.write(data, 0, nRead);
             }
@@ -114,12 +115,15 @@ public class AppComponentFactoryStub extends Application {
             Log.e(TAG, "Failed to parse npatch/config.json", e);
         } finally {
             if (is != null) {
-                try { is.close(); } catch (Exception ignored) {}
+                try {
+                    is.close();
+                } catch (Exception ignored) {
+                }
             }
         }
         Log.w(TAG, "Original application name not found, falling back to default");
         return "android.app.Application";
-        }
+    }
 
     private static Application createOriginalApplication(Context base) throws Exception {
         try {
@@ -130,31 +134,46 @@ public class AppComponentFactoryStub extends Application {
             Object loadedApk = findField(boundApplication.getClass(), "info").get(boundApplication);
             Field appInfoField = findField(loadedApk.getClass(), "mApplicationInfo");
             ApplicationInfo appInfo = (ApplicationInfo) appInfoField.get(loadedApk);
-        if ("android.app.Application".equals(appName) || appName == null || appName.isEmpty()) {
-            Log.d(TAG, "Using default android.app.Application");
-            appInfo.className = null;
-        } else {
-            Log.d(TAG, "Using original Application: " + appName);
-            appInfo.className = appName;
-        }
+            if ("android.app.Application".equals(appName) || appName == null || appName.isEmpty()) {
+                Log.d(TAG, "Using default android.app.Application");
+                appInfo.className = null;
+            } else {
+                Log.d(TAG, "Using original Application: " + appName);
+                appInfo.className = appName;
+            }
             Field mApplicationField = findField(loadedApk.getClass(), "mApplication");
             mApplicationField.set(loadedApk, null);
-            Method makeApplication = findMethod(loadedApk.getClass(), "makeApplication", boolean.class, Instrumentation.class);
+            Method makeApplication = findMethod(
+                    loadedApk.getClass(),
+                    "makeApplication",
+                    boolean.class,
+                    Instrumentation.class
+            );
             return (Application) makeApplication.invoke(loadedApk, false, null);
         } catch (Exception e) {
-              Log.e(TAG, "Failed to create application", e);
-              throw e;
+            Log.e(TAG, "Failed to create application", e);
+            throw e;
         }
     }
 
     private void replaceApplication(Object activityThread, Application original) throws Exception {
-        Field initialApplication = findField(activityThread.getClass(), "mInitialApplication");
-        initialApplication.set(activityThread, original);
-        Field allApplications = findField(activityThread.getClass(), "mAllApplications");
+        if (original == null) {
+            throw new IllegalStateException("Original application is null");
+        }
+        Field initialApplicationField = findField(activityThread.getClass(), "mInitialApplication");
+        initialApplicationField.set(activityThread, original);
+        Field allApplicationsField = findField(activityThread.getClass(), "mAllApplications");
         @SuppressWarnings("unchecked")
-        List<Application> applications = (List<Application>) allApplications.get(activityThread);
+        List<Application> applications = (List<Application>) allApplicationsField.get(activityThread);
         applications.remove(this);
-        if (!applications.contains(original)) applications.add(original);
+        if (!applications.contains(original)) {
+            applications.add(original);
+        }
+        Object boundApplication = findField(activityThread.getClass(), "mBoundApplication").get(activityThread);
+        Object loadedApk = findField(boundApplication.getClass(), "info").get(boundApplication);
+        Field applicationField = findField(loadedApk.getClass(), "mApplication");
+        applicationField.set(loadedApk, original);
+        Log.i(TAG, "Application replaced: " + original.getClass().getName());
     }
 
     private static Object currentActivityThread() throws Exception {
@@ -191,56 +210,61 @@ public class AppComponentFactoryStub extends Application {
         }
         throw new NoSuchMethodException(name);
     }
-
+    
     private static class InstrumentationProxy extends Instrumentation {
-        private final Instrumentation base;
-        private final ClassLoader classLoader;
 
-        InstrumentationProxy(Instrumentation base, ClassLoader classLoader) {
-            this.base = base;
-            this.classLoader = classLoader;
-        }
+    private final Instrumentation base;
+    private final ClassLoader classLoader;
 
-        @Override
-        public Application newApplication(ClassLoader cl, String className, Context context) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-            ensureBootstrapComplete();
-            // Try the framework-provided classloader first, then fallback to the stored classLoader, then to context's loader
-            try {
-                return base.newApplication(cl, className, context);
-            } catch (ClassNotFoundException e1) {
-                Log.w(TAG, "newApplication: not found with provided classloader, trying fallback", e1);
-                ClassLoader fallback = classLoader != null ? classLoader : (context != null ? context.getClassLoader() : null);
-                if (fallback != null && fallback != cl) {
-                    try {
-                        return base.newApplication(fallback, className, context);
-                    } catch (ClassNotFoundException e2) {
-                        Log.w(TAG, "newApplication: not found with fallback classloader, rethrow", e2);
-                        throw e2;
-                    }
-                }
-                throw e1;
+    InstrumentationProxy(Instrumentation base, ClassLoader classLoader) {
+        this.base = base;
+        this.classLoader = classLoader;
+    }
+
+    @Override
+    public Application newApplication(
+            ClassLoader cl,
+            String className,
+            Context context
+    ) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+        ensureBootstrapComplete();
+
+        try {
+            return base.newApplication(cl, className, context);
+        } catch (ClassNotFoundException e) {
+            ClassLoader fallback = classLoader != null
+                    ? classLoader
+                    : context.getClassLoader();
+
+            if (fallback != null && fallback != cl) {
+                return base.newApplication(fallback, className, context);
             }
-        }
 
-        @Override
-        public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-            ensureBootstrapComplete();
-            // Try the framework-provided classloader first, then fallback to the stored classLoader, then to thread context loader
-            try {
-                return base.newActivity(cl, className, intent);
-            } catch (ClassNotFoundException e1) {
-                Log.w(TAG, "newActivity: not found with provided classloader, trying fallback", e1);
-                ClassLoader fallback = classLoader != null ? classLoader : Thread.currentThread().getContextClassLoader();
-                if (fallback != null && fallback != cl) {
-                    try {
-                        return base.newActivity(fallback, className, intent);
-                    } catch (ClassNotFoundException e2) {
-                        Log.w(TAG, "newActivity: not found with fallback classloader, rethrow", e2);
-                        throw e2;
-                    }
-                }
-                throw e1;
-            }
+            throw e;
         }
     }
+
+    @Override
+    public Activity newActivity(
+            ClassLoader cl,
+            String className,
+            Intent intent
+    ) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+        ensureBootstrapComplete();
+
+        try {
+            return base.newActivity(cl, className, intent);
+        } catch (ClassNotFoundException e) {
+            ClassLoader fallback = classLoader != null
+                    ? classLoader
+                    : Thread.currentThread().getContextClassLoader();
+
+            if (fallback != null && fallback != cl) {
+                return base.newActivity(fallback, className, intent);
             }
+
+            throw e;
+        }
+    }
+}
+}
