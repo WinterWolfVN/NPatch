@@ -18,6 +18,9 @@ public class AppComponentFactoryStub extends Application {
 
     private static final String TAG = "NPatch-Metaloader";
     private Application originalApplication;
+    private static volatile boolean bootstrapComplete = false;
+    private static final Object bootstrapLock = new Object();
+    
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -28,7 +31,16 @@ public class AppComponentFactoryStub extends Application {
             hookInstrumentation(base.getClassLoader());
             Object activityThread = currentActivityThread();
             replaceApplication(activityThread, originalApplication);
+            synchronized (bootstrapLock) {
+            bootstrapComplete = true;
+            bootstrapLock.notifyAll();
+            }
+            Log.i(TAG, "Bootstrap complete");
         } catch (Throwable e) {
+            synchronized (bootstrapLock) {
+            bootstrapComplete = true;
+            bootstrapLock.notifyAll();
+            }
             Log.e(TAG, "Unable to bootstrap", e);
             throw new IllegalStateException("Unable to bootstrap", e);
         }
@@ -41,6 +53,27 @@ public class AppComponentFactoryStub extends Application {
         }
         originalApplication.onCreate();
     }
+    
+    public static void ensureBootstrapComplete() {
+        if (bootstrapComplete) {
+            return;
+        }    
+    synchronized (bootstrapLock) {
+        if (bootstrapComplete) {
+            return;
+        }        
+        try {
+            Log.d(TAG, "Waiting for bootstrap to complete...");
+            bootstrapLock.wait(5000);             
+            if (!bootstrapComplete) {
+                Log.w(TAG, "Bootstrap timeout reached!");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Log.w(TAG, "Bootstrap wait interrupted", e);
+        }
+    }
+}
 
     @Override
     public Context getApplicationContext() {
@@ -158,6 +191,7 @@ public class AppComponentFactoryStub extends Application {
 
         @Override
         public Application newApplication(ClassLoader cl, String className, Context context) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+            ensureBootstrapComplete();
             // Try the framework-provided classloader first, then fallback to the stored classLoader, then to context's loader
             try {
                 return base.newApplication(cl, className, context);
@@ -178,6 +212,7 @@ public class AppComponentFactoryStub extends Application {
 
         @Override
         public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+            ensureBootstrapComplete();
             // Try the framework-provided classloader first, then fallback to the stored classLoader, then to thread context loader
             try {
                 return base.newActivity(cl, className, intent);
