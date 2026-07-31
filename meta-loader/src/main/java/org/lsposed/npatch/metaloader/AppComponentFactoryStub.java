@@ -121,18 +121,29 @@ public class AppComponentFactoryStub extends Application {
         return "android.app.Application";
         }
 
-        private static Application createOriginalApplication(Context base) throws Exception {
+    private static Application createOriginalApplication(Context base) throws Exception {
+        try {
+            String appName = getRealApplicationNameFromJson(base);
+            Log.d(TAG, "Original app name from config: " + appName);
+            if ("android.app.Application".equals(appName)) {
+                Log.d(TAG, "App uses default Application");
+                return null;
+            }
             Object activityThread = currentActivityThread();
             Object boundApplication = findField(activityThread.getClass(), "mBoundApplication").get(activityThread);
             Object loadedApk = findField(boundApplication.getClass(), "info").get(boundApplication);
             Field appInfoField = findField(loadedApk.getClass(), "mApplicationInfo");
             ApplicationInfo appInfo = (ApplicationInfo) appInfoField.get(loadedApk);
-            appInfo.className = getRealApplicationNameFromJson(base);
+            appInfo.className = appName;
             Field mApplicationField = findField(loadedApk.getClass(), "mApplication");
             mApplicationField.set(loadedApk, null);
             Method makeApplication = findMethod(loadedApk.getClass(), "makeApplication", boolean.class, Instrumentation.class);
             return (Application) makeApplication.invoke(loadedApk, false, null);
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to create original application", e);
+            return null;
         }
+    }
 
     private void replaceApplication(Object activityThread, Application original) throws Exception {
         Field initialApplication = findField(activityThread.getClass(), "mInitialApplication");
