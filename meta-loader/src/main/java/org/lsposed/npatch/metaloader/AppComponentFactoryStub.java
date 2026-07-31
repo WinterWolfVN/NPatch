@@ -126,8 +126,10 @@ public class AppComponentFactoryStub extends Application {
             String appName = getRealApplicationNameFromJson(base);
             Log.d(TAG, "Original app name from config: " + appName);
             if ("android.app.Application".equals(appName)) {
-                Log.d(TAG, "App uses default Application");
-                return null;
+                appInfo.className = null;
+            } else {
+                appInfo.className = appName;
+                }
             }
             Object activityThread = currentActivityThread();
             Object boundApplication = findField(activityThread.getClass(), "mBoundApplication").get(activityThread);
@@ -140,15 +142,14 @@ public class AppComponentFactoryStub extends Application {
             Method makeApplication = findMethod(loadedApk.getClass(), "makeApplication", boolean.class, Instrumentation.class);
             return (Application) makeApplication.invoke(loadedApk, false, null);
         } catch (Exception e) {
-            Log.w(TAG, "Failed to create original application", e);
-            return null;
-        }
+              Log.e(TAG, "Failed to create application", e);
+              throw e;
+        }        
     }
 
     private void replaceApplication(Object activityThread, Application original) throws Exception {
         Field initialApplication = findField(activityThread.getClass(), "mInitialApplication");
         initialApplication.set(activityThread, original);
-
         Field allApplications = findField(activityThread.getClass(), "mAllApplications");
         @SuppressWarnings("unchecked")
         List<Application> applications = (List<Application>) allApplications.get(activityThread);
