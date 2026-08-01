@@ -46,7 +46,7 @@ jobs:
     - name: 設定 Java
       uses: actions/setup-java@v5
       with:
-        java-version: '21'
+        java-version: '17'
         distribution: 'zulu'
 
     - name: 設定 Gradle
