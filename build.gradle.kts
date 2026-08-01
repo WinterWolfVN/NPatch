@@ -258,7 +258,8 @@ fun Project.configureApplicationExtension(extension: ApplicationExtension) {
         tasks.configureEach {
             if (name == "optimizeReleaseResources") {
                 finalizedBy(optimizeReleaseRes)
-            }        
+            }      
+        }
     }
 }
 
@@ -283,5 +284,12 @@ subprojects {
     }
     plugins.withId("com.android.library") {
         configureBaseExtension()
+    }
+    afterEvaluate {
+        if (plugins.hasPlugin("com.android.application") || plugins.hasPlugin("com.android.library")) {
+            dependencies {
+                add("coreLibraryDesugaring", "com.android.tools:desugar_jdk_libs_nio:2.1.5")
+            }
+        }
     }
 }
