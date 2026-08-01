@@ -46,13 +46,13 @@ val verCode by extra(commitCount)
 val verName by extra("1.0.7")
 val coreVerCode by extra(coreCommitCount)
 val coreVerName by extra(coreLatestTag)
-val androidMinSdkVersion by extra(28)
+val androidMinSdkVersion by extra(24)
 val androidTargetSdkVersion by extra(37)
 val androidCompileSdkVersion by extra(37)
 val androidCompileNdkVersion by extra("29.0.13599879")
 val androidBuildToolsVersion by extra("37.0.0")
-val androidSourceCompatibility by extra(JavaVersion.VERSION_21)
-val androidTargetCompatibility by extra(JavaVersion.VERSION_21)
+val androidSourceCompatibility by extra(JavaVersion.VERSION_17)
+val androidTargetCompatibility by extra(JavaVersion.VERSION_17)
 
 tasks.register<Delete>("clean") {
     delete(layout.buildDirectory)
@@ -131,6 +131,7 @@ fun Project.configureBaseExtension() {
         compileOptions {
             targetCompatibility(androidTargetCompatibility)
             sourceCompatibility(androidSourceCompatibility)
+            isCoreLibraryDesugaringEnabled = true
         }
 
         buildTypes {
@@ -258,6 +259,9 @@ fun Project.configureApplicationExtension(extension: ApplicationExtension) {
             if (name == "optimizeReleaseResources") {
                 finalizedBy(optimizeReleaseRes)
             }
+        tasks.withType<JavaCompile>().configureEach {
+            sourceCompatibility = "17"
+            targetCompatibility = "17"
         }
     }
 }
