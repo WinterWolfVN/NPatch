@@ -43,7 +43,7 @@ class LSPApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        ManagerIntegrity.verifyOnStartup(this)
+        // ManagerIntegrity.verifyOnStartup(this)
 
         try {
         } catch (e: UnsatisfiedLinkError) {
