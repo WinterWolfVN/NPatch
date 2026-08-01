@@ -2,7 +2,6 @@ package org.lsposed.npatch.metaloader;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityThread;
-import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -38,14 +37,9 @@ public class LSPAppComponentFactoryStub {
 
     public static byte[] dex;
 
-    static {    
-    final boolean appZygote = ActivityThread.currentActivityThread() == null;
-    if (appZygote) {
-        Log.i(TAG, "Skip loading libnpatch.so for appZygote");
-    } else {
+    static {        
         bootstrap();        
     }
-}
     
     private static void bootstrap() {
         try {
