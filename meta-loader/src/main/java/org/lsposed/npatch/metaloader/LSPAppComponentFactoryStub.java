@@ -38,8 +38,6 @@ public class LSPAppComponentFactoryStub {
 
     public static byte[] dex;
 
-    LSPAppComponentFactoryStub.bootstrap(mClassLoader);
-
     static {        
         bootstrap();        
     }
