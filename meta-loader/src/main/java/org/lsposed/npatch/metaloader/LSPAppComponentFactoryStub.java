@@ -2,6 +2,7 @@ package org.lsposed.npatch.metaloader;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityThread;
+import android.app.LoadedApk;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -36,6 +37,8 @@ public class LSPAppComponentFactoryStub {
     private static final Map<String, String> archToLib = new HashMap<String, String>(4);
 
     public static byte[] dex;
+
+    LSPAppComponentFactoryStub.bootstrap(mClassLoader);
 
     static {        
         bootstrap();        
