@@ -20,7 +20,7 @@ public final class AppComponentFactoryStub {
             Class<?> cls = Class.forName(
                     "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub",
                     true,
-                    LoadedApk.getClassLoader()                    
+                    context.getClassLoader()                    
             );            
             android.util.Log.e(TAG, "LSPAppComponentFactoryStub has been activated");          
         } catch (Throwable t) {
