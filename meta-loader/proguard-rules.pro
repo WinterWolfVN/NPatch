@@ -14,7 +14,8 @@
 }
 -keep class org.lsposed.npatch.metaloader.NewApplicationStub { *; }
 -keep class org.lsposed.npatch.metaloader.NewApplicationStub$InstrumentationProxy { *; }
-
+-keep class org.lsposed.npatch.metaloader.AppComponentFactory { *; ,}
+-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
 -dontwarn androidx.annotation.NonNull
 -dontwarn androidx.annotation.Nullable
 -dontwarn androidx.annotation.VisibleForTesting
