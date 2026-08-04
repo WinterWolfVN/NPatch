@@ -16,7 +16,7 @@ public final class AppComponentFactoryStub {
         android.util.Log.e(TAG, "Provider has been activated");        
 
         try {
-            ClassLoader cls = AppComponentFactoryStub.class.getClassLoader();
+            ClassLoader cl = AppComponentFactoryStub.class.getClassLoader();
             Class<?> cls = Class.forName(
                     "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub",
                     true,
