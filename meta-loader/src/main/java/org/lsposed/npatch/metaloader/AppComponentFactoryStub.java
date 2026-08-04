@@ -12,10 +12,11 @@ import java.lang.reflect.Method;
 public final class AppComponentFactoryStub {    
     private static final String TAG = "NPatch-Metaloader";    
     
-    public void run(Context context) {       
+    public void run(Context context) {            
         android.util.Log.e(TAG, "Provider has been activated");        
 
         try {
+            ClassLoader cls = AppComponentFactoryStub.class.getClassLoader();
             Class<?> cls = Class.forName(
                     "org.lsposed.npatch.metaloader.LSPAppComponentFactoryStub",
                     true,
