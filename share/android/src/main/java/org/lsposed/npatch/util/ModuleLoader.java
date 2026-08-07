@@ -30,7 +30,7 @@ public class ModuleLoader {
                 SharedMemory.unmap(byteBuffer);
                 memory.setProtect(OsConstants.PROT_READ);
                 preLoadedDexes.add(memory);
-            } catch (IOException e) {
+            } catch (IOException | ErrnoException e) {
                 Log.w(TAG, "Can not load " + dexFile + " in " + apkFile, e);
           }
         }
