@@ -46,4 +46,5 @@ public static ClassLoader InMemoryDexClassLoader(ByteBuffer[] buffers, ClassLoad
         } catch (Throwable e) {
             return parent;
         }
-                  }
+    }
+}
