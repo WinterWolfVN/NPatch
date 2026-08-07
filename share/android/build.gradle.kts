@@ -5,7 +5,7 @@ plugins {
 android {
     sourceSets {
         named("main") {
-            java.srcDir("${rootProject.projectDir}/oldlib")             
+            java.srcDir("${rootProject.projectDir}/src")             
         }
     }
     namespace = "org.lsposed.npatch.share"
@@ -14,10 +14,6 @@ android {
         androidResources = false
         buildConfig = false
     }
-}
-
-tasks.withType<JavaCompile>().configureEach {
-    exclude("**/dalvik/system/**")
 }
 
 dependencies {
