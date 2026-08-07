@@ -1,5 +1,8 @@
 package android.os;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.os.MemoryFile;
 import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.lang.reflect.Field;
