@@ -1,7 +1,6 @@
 package org.lsposed.npatch.util;
 
 import android.os.SharedMemory;
-import android.system.ErrnoException;
 import android.system.OsConstants;
 import android.util.Log;
 
@@ -30,7 +29,7 @@ public class ModuleLoader {
                 SharedMemory.unmap(byteBuffer);
                 memory.setProtect(OsConstants.PROT_READ);
                 preLoadedDexes.add(memory);
-            } catch (IOException | ErrnoException e) {
+            } catch (IOException e) {
                 Log.w(TAG, "Can not load " + dexFile + " in " + apkFile, e);
           }
         }
