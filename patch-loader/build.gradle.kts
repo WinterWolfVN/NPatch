@@ -9,6 +9,12 @@ android {
         multiDexEnabled = true
     }
 
+    sourceSets {
+        named("main") {
+            java.srcDir("${rootProject.projectDir}/oldlib")             
+        }
+    }
+
     buildFeatures {
         buildConfig = true
     }
@@ -50,6 +56,10 @@ androidComponents.onVariants { variant ->
             )
         )
         into("${rootProject.projectDir}/out/assets/${variant.name}/npatch/so")
+    }
+
+    tasks.withType<JavaCompile>().configureEach {
+        exclude("**/android/os/**")
     }
 
     tasks.register("copy$variantCapped") {
