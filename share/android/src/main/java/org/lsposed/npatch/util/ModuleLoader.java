@@ -1,6 +1,6 @@
 package org.lsposed.npatch.util;
 
-import android.os.SharedMemory;
+import oldlib.android.os.SharedMemory;
 import android.system.ErrnoException;
 import android.system.OsConstants;
 import android.util.Log;
