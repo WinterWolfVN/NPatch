@@ -70,9 +70,7 @@ public class RemoteApplicationService implements ILSPApplicationService {
                 Handler handler = new Handler(handlerThread.getLooper());
 
                 Class<?> contextImplClass = context.getClass();
-                Method getUserMethod = contextImplClass.getMethod("getUser");
-                UserHandle userHandle = (UserHandle) getUserMethod.invoke(context);
-
+                UserHandle userHandle = android.os.Process.myUserHandle();
                 Method bindServiceAsUserMethod = contextImplClass.getDeclaredMethod(
                         "bindServiceAsUser",
                         Intent.class,
