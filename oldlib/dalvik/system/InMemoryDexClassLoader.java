@@ -1,6 +1,8 @@
 package oldlib.dalvik.system;
 
 import java.nio.ByteBuffer;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexClassLoader;
