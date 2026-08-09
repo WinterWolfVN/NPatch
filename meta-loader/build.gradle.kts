@@ -25,6 +25,9 @@ android {
 androidComponents.onVariants { variant ->
     val variantCapped = variant.name.replaceFirstChar { it.uppercase() }
     val variantLowered = variant.name.lowercase()
+    tasks.withType<JavaCompile>().configureEach {
+        exclude("**/oldlib/android/**")
+    }
     tasks.register<Copy>("copyDex$variantCapped") {
     dependsOn("assemble$variantCapped")
     val dexOutPath = if (variant.buildType == "release")
@@ -33,10 +36,7 @@ androidComponents.onVariants { variant ->
     from(dexOutPath)
     rename("classes.dex", "metaloader.dex")
     into("${rootProject.projectDir}/out/assets/${variant.name}/npatch")
-}
-    tasks.withType<JavaCompile>().configureEach {
-        exclude("**/oldlib/android/**")
-    }
+}    
     tasks.register("copy$variantCapped") {
         dependsOn("copyDex$variantCapped")
 
