@@ -12,8 +12,7 @@
 }
 -keep class com.android.** { *; 
 }
--keep class org.lsposed.npatch.metaloader.NewApplicationStub { *; }
--keep class org.lsposed.npatch.metaloader.NewApplicationStub$InstrumentationProxy { *; }
+-keep class oldlib.dalvik.system.InMemoryDexClassLoader { *; }
 -keep class org.lsposed.npatch.metaloader.AppComponentFactoryStub { *; }
 -keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
 -dontwarn androidx.annotation.NonNull
