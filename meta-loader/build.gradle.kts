@@ -8,6 +8,11 @@ android {
     defaultConfig {
         multiDexEnabled = true
     }        
+    sourceSets {
+        named("main") {
+            java.srcDir("${rootProject.projectDir}/oldlib")             
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -29,6 +34,9 @@ androidComponents.onVariants { variant ->
     rename("classes.dex", "metaloader.dex")
     into("${rootProject.projectDir}/out/assets/${variant.name}/npatch")
 }
+    tasks.withType<JavaCompile>().configureEach {
+        exclude("**/oldlib/android/**")
+    }
     tasks.register("copy$variantCapped") {
         dependsOn("copyDex$variantCapped")
 
