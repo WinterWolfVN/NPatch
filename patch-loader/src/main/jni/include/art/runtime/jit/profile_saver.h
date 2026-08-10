@@ -19,6 +19,15 @@ private:
         return true;
     };
 
+    inline static auto ProcessProfilingInfoLegacy_ =
+        "_ZN3art12ProfileSaver20ProcessProfilingInfoEPt"_sym.hook->*
+        []<MemBackup auto backup>(
+            ProfileSaver *thiz,
+            uint16_t *new_methods) static -> bool {
+            LOGD("skipped profile saving");
+            return true;
+        };
+
     inline static auto ProcessProfilingInfoWithBool_ =
         "_ZN3art12ProfileSaver20ProcessProfilingInfoEbbPt"_sym.hook->*
         []<MemBackup auto backup>(ProfileSaver *thiz, bool, bool, uint16_t *) static -> bool {
@@ -47,8 +56,15 @@ private:
 
 public:
     static void DisableInline(const HookHandler &handler) {
-        handler(ProcessProfilingInfo_);
-        handler(ProcessProfilingInfoWithBool_);
+        const int api_level = lspd::GetAndroidApiLevel();
+
+        if (api_level >= 26) {
+            handler(ProcessProfilingInfo_);
+            handler(ProcessProfilingInfoWithBool_);
+        } else {
+            handler(ProcessProfilingInfoLegacy_);
+        }      
+        
         handler(execve_);
     }
 };
