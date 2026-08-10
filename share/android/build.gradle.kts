@@ -16,6 +16,10 @@ android {
     }
 }
 
+    tasks.withType<JavaCompile>().configureEach {
+        source(file("${rootProject.projectDir}/src/android/os/SharedMemory.java"))
+    }
+
 dependencies {
     implementation(projects.services.daemonService)
 }
