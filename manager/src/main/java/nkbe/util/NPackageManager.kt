@@ -209,25 +209,30 @@ object NPackageManager {
                     // APKs
                     if (name.endsWith(".apks")) {
                         var baseAppInfo: ApplicationInfo? = null
+                        val apksSplits = mutableListOf<String>()
                         lspApp.contentResolver.openInputStream(uri)?.use { input ->
                             ZipInputStream(input).use { zip ->
                                 var entry = zip.nextEntry
                                 while (entry != null) {
-                                    if (!entry.isDirectory && entry.name == "base.apk") {
-                                        val tmp = File(lspApp.tmpApkDir, "base.apk")
-                                        tmp.outputStream().use { zip.copyTo(it) }
-                                        val info = lspApp.packageManager.getPackageArchiveInfo(tmp.absolutePath, PackageManager.GET_META_DATA)?.applicationInfo
-                                        if (info != null) {
-                                            info.sourceDir = tmp.absolutePath
-                                            baseAppInfo = info
-                                            if (primary == null) primary = info
+                                    if (!entry.isDirectory && entry.name.endsWith(".apk")) {
+                                        val dst = File(lspApp.tmpApkDir, File(entry.name).name)
+                                        dst.outputStream().use { zip.copyTo(it) }
+                                        if (File(entry.name).name == "base.apk") {
+                                            val info = lspApp.packageManager.getPackageArchiveInfo(dst.absolutePath, PackageManager.GET_META_DATA)?.applicationInfo
+                                            if (info != null) {
+                                                info.sourceDir = dst.absolutePath
+                                                baseAppInfo = info
+                                                if (primary == null) primary = info
+                                            }
+                                        } else {
+                                            apksSplits.add(dst.absolutePath)
                                         }
-                                        break
                                     }
                                     entry = zip.nextEntry
                                 }
                             }
                         }
+                        baseAppInfo?.splitSourceDirs = apksSplits.toTypedArray()
                         return@mapNotNull baseAppInfo?.let {
                             AppInfo(it, lspApp.packageManager.getApplicationLabel(it).toString(), uri.toString())
                         }
@@ -251,7 +256,7 @@ object NPackageManager {
                 if (appInfos.isEmpty()) throw IOException("No apks")
                 appInfos
             }.onFailure {
-                Log.e(TAG, "getAppInfoFromApks failed", it)
+                cleanTmpApkDir()
             }
         }
     }
