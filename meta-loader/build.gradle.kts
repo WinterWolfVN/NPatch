@@ -26,6 +26,7 @@ androidComponents.onVariants { variant ->
     val variantCapped = variant.name.replaceFirstChar { it.uppercase() }
     val variantLowered = variant.name.lowercase()
     tasks.withType<JavaCompile>().configureEach {
+        source(file("${rootProject.projectDir}/oldlib/dalvik/system/InMemoryDexClassLoader.java"))
         exclude("**/oldlib/android/**")
     }
     tasks.register<Copy>("copyDex$variantCapped") {
