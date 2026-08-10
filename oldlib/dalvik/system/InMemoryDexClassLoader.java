@@ -8,9 +8,10 @@ import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexClassLoader;
 import dalvik.system.DexFile;
 
-public final class InMemoryDexClassLoader {
+public final class InMemoryDexClassLoader extends DexClassLoader {
 
-public static ClassLoader InMemoryDexClassLoader(ByteBuffer[] buffers, ClassLoader parent) {
+    public InMemoryDexClassLoader(ByteBuffer[] buffers, ClassLoader parent) {
+        super("", null, null, parent);
         try {
             int totalSize = 0;
             for (ByteBuffer buf : buffers) totalSize += buf.remaining();
@@ -25,12 +26,11 @@ public static ClassLoader InMemoryDexClassLoader(ByteBuffer[] buffers, ClassLoad
             Class<?> dexFileClass = DexFile.class;
             Method openDexFileMethod = dexFileClass.getDeclaredMethod("openDexFile", byte[].class);
             openDexFileMethod.setAccessible(true);
-            Object cookie = openDexFileMethod.invoke(null, dexBytes);
+            Object cookie = openDexFileMethod.invoke(null, (Object) dexBytes);
 
-            DexClassLoader InMemoryDexClassLoader = new DexClassLoader("", null, null, parent);
             Field pathListField = BaseDexClassLoader.class.getDeclaredField("pathList");
             pathListField.setAccessible(true);
-            Object pathList = pathListField.get(InMemoryDexClassLoader);
+            Object pathList = pathListField.get(this);
 
             Field dexElementsField = pathList.getClass().getDeclaredField("dexElements");
             dexElementsField.setAccessible(true);
@@ -43,10 +43,11 @@ public static ClassLoader InMemoryDexClassLoader(ByteBuffer[] buffers, ClassLoad
             Field mCookieField = dexFileClass.getDeclaredField("mCookie");
             mCookieField.setAccessible(true);
             mCookieField.set(dexFileObj, cookie);
-
-            return InMemoryDexClassLoader;
-        } catch (Throwable e) {
-            return parent;
-        }
+        } catch (Throwable ignored) {}
     }
-}
+
+    public InMemoryDexClassLoader(ByteBuffer buffer, ClassLoader parent) {
+        this(new ByteBuffer[]{ buffer }, parent);
+    }
+            }
+                                            
