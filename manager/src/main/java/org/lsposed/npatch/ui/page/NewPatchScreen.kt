@@ -136,6 +136,8 @@ fun NewPatchScreen(
                     ACTION_STORAGE -> {
                         storageLauncher.launch(arrayOf(
                             "application/vnd.android.package-archive",
+                            "application/zip",
+                            "application/x-zip-compressed",
                             "application/octet-stream",
                         ))
                         viewModel.dispatch(ViewAction.DoneInit)
