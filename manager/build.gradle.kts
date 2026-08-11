@@ -116,6 +116,7 @@ dependencies {
     implementation(npatch.google.accompanist.swiperefresh)
     implementation(libs.material)
     implementation(libs.gson)
+    implementation(libs.okhttp)
     implementation(npatch.rikka.shizuku.api)
     implementation(npatch.rikka.shizuku.provider)
     implementation(npatch.rikka.refine)
