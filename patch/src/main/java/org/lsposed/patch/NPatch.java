@@ -129,6 +129,7 @@ public class NPatch {
     private List<String> modules = new ArrayList<>();
 
     private String packageName;
+    private String splitName;
 
     private static final String ANDROID_MANIFEST_XML = "AndroidManifest.xml";
     private static final String META_INF_PREFIX = "META-INF/";
