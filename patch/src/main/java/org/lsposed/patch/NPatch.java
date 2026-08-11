@@ -293,8 +293,10 @@ public class NPatch {
                 appComponentFactory = pair.appComponentFactory;
                 minSdkVersion = pair.minSdkVersion;
                 packageName = pair.packageName;  
+                splitName = pair.splitName;
                 applicationName = pair.applicationName;                
                 logger.d("original appComponentFactory class: " + appComponentFactory);
+                logger.d("original split name: " + pair.splitName);
                 logger.d("original application class: " + applicationName);
                 logger.d("original minSdkVersion: " + minSdkVersion);
                 if (newPackage == null || newPackage.isEmpty()) {
@@ -306,7 +308,7 @@ public class NPatch {
                 logger.i("authorities size: " + (pair.authorities == null ? 0 : pair.authorities.size()));
             }
 
-            final boolean skipSplit = apkPaths.size() > 1 && srcApkFile.getName().startsWith("split_") && appComponentFactory == null;
+            final boolean skipSplit = apkPaths.size() > 1 && pair.splitName != null && !pair.splitName.isEmpty();
             if (skipSplit) {
                 logger.i("Packing split apk...");
                 for (StoredEntry entry : srcZFile.entries()) {
@@ -324,7 +326,7 @@ public class NPatch {
                 }
                 return;
             }
-
+            
             logger.i("Patching apk...");
             // modify manifest
             final var config = new PatchConfig(useManager, debuggableFlag, overrideVersionCode, overrideVersionCodeValue, sigbypassLevel, originalSignature, appComponentFactory, isInjectProvider, outputLog, newPackage, useMicroG, applicationName);
