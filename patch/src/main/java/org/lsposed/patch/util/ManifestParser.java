@@ -136,7 +136,7 @@ public class ManifestParser {
         public List<String> authorities;
 
         public Pair(String packageName, String applicationName, String appComponentFactory, int minSdkVersion) {
-            this(packageName, null, String applicationName, appComponentFactory, minSdkVersion);
+            this(packageName, null, applicationName, appComponentFactory, minSdkVersion);
         }
         
         public Pair(String packageName, String splitName, String applicationName, String appComponentFactory, int minSdkVersion) {
