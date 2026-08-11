@@ -90,7 +90,7 @@ fun RepoScreen(navController: NavController) {
                 NPackageManager.getAppInfoFromApks(listOf(uri))
                     .onSuccess {
                         downloadingModule = null
-                        navController.navigate(BottomBarDestination.Manage.route)
+                        navController.navigate(BottomBarDestination.Manage)
                         navController.navigate("new_patch")
                     }
                     .onFailure { throw it }
