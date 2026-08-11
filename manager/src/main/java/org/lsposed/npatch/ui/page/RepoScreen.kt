@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import com.ramcosta.composedestinations.annotation.Destination
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +35,7 @@ import java.util.concurrent.TimeUnit
 
 private const val TAG = "RepoScreen"
 
+@Destination
 @Composable
 fun RepoScreen(navController: NavController) {
     val scope = rememberCoroutineScope()
