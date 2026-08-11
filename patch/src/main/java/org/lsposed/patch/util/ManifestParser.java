@@ -19,6 +19,7 @@ public class ManifestParser {
     public static Pair parseManifestFile(InputStream is) throws IOException {
         AxmlParser parser = new AxmlParser(Utils.getBytesFromInputStream(is));
         String packageName = null;
+        String splitName = null;
         String applicationName = null;
         String appComponentFactory = null;
         int minSdkVersion = 0;
@@ -44,6 +45,9 @@ public class ManifestParser {
                         if ("manifest".equals(name)) {
                             if ("package".equals(attrName)) {
                                 packageName = parser.getAttrValue(i).toString();
+                            }
+                            if ("split".equals(attrName) || attrNameRes == 0x01010549) {
+                                splitName = parser.getAttrValue(i).toString();
                             }
                         }
 
@@ -103,7 +107,7 @@ public class ManifestParser {
             return null;
         }
 
-        Pair pair = new Pair(packageName, applicationName, appComponentFactory, minSdkVersion);
+        Pair pair = new Pair(packageName, splitName, applicationName, appComponentFactory, minSdkVersion);
         pair.setPermissions(permissions);
         pair.setUse_permissions(use_permissions);
         pair.setAuthorities(authorities);
@@ -122,8 +126,9 @@ public class ManifestParser {
 
     public static class Pair {
         public String packageName;
-        public String appComponentFactory;
+        public String splitName;
         public String applicationName;
+        public String appComponentFactory;        
         
         public int minSdkVersion;
         public List<String> permissions;
@@ -131,10 +136,15 @@ public class ManifestParser {
         public List<String> authorities;
 
         public Pair(String packageName, String applicationName, String appComponentFactory, int minSdkVersion) {
+            this(packageName, null, appComponentFactory, minSdkVersion);
+        }
+        
+        public Pair(String packageName, String splitName, String applicationName, String appComponentFactory, int minSdkVersion) {
             this.packageName = packageName;
-            this.appComponentFactory = appComponentFactory;
-            this.minSdkVersion = minSdkVersion;
+            this.splitName = splitName;
             this.applicationName = applicationName;
+            this.appComponentFactory = appComponentFactory;
+            this.minSdkVersion = minSdkVersion;            
         }
 
         public List<String> getPermissions() {
