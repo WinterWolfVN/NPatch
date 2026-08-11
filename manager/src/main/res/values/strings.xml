@@ -108,6 +108,11 @@
     <string name="settings_detail_patch_logs">Detail patch logs</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_system">Follow System</string>
+
+    <!-- Repo -->
+    <string name="loading">Loading...</string>
+    <string name="repo_retry">Retry</string>
+    <string name="list_empty">No items found</string>
     
     <!-- MiUI Uninstall Desc -->
     <string name="miui_uninstall_title">💩卸💩载💩金💩凡💩</string>
