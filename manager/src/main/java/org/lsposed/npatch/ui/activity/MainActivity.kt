@@ -34,6 +34,14 @@ import org.lsposed.npatch.ui.util.LocalSnackbarHost
 class MainActivity : AppCompatActivity() {
 
     @OptIn(ExperimentalAnimationApi::class)
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(newBase)
+        AppCompatDelegate.setApplicationLocales(
+            AppCompatDelegate.getApplicationLocales()
+        )
+    }
+
+    @OptIn(ExperimentalAnimationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
