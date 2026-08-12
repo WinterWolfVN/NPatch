@@ -64,6 +64,11 @@ jobs:
             echo "Successfully patched"
           fi
 
+    - name: My Patch
+      run: |
+          replace:
+          "dalvik/system/InMemoryDexClassLoader": "oldlib/dalvik/system/InMemoryDexClassLoader"
+
     - name: 設定快取
       uses: actions/cache@v4
       with:
