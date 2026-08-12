@@ -56,14 +56,14 @@ data class Collaborator(
 object RepoLoader {
 
     private const val TAG = "RepoLoader"
-    private const val REPO_URL = "https://modules.lsposed.org"
+    private const val REPO_URL = "https://modules.lsposed.org/modules.json"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val repoFile = File(lspApp.filesDir, "repo.json")
+    private val repoFile = File(lspApp.filesDir, "modules.json")
     private val gson = Gson()
 
     var modules by mutableStateOf<List<OnlineModule>>(emptyList())
