@@ -311,7 +311,7 @@ private fun Language() {
 
     var expanded by remember { mutableStateOf(false) }
 
-    val currentTag by remember {        
+    val currentTag = remember {        
             AppCompatDelegate.getApplicationLocales()
                 .toLanguageTags()
                 .takeIf { it.isNotEmpty() && it != "und" }
