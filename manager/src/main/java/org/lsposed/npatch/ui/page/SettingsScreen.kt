@@ -311,13 +311,11 @@ private fun Language() {
 
     var expanded by remember { mutableStateOf(false) }
 
-    val currentTag by remember {
-        derivedStateOf {
+    val currentTag by remember {        
             AppCompatDelegate.getApplicationLocales()
                 .toLanguageTags()
                 .takeIf { it.isNotEmpty() && it != "und" }
-                ?: ""
-        }
+                ?: ""        
     }
 
     val currentLabel = remember(currentTag, systemDefault) {
