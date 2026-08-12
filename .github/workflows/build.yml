@@ -66,7 +66,12 @@ jobs:
 
     - name: My Patch
       run: |
-          sed -i 's#dalvik/system/InMemoryDexClassLoader#oldlib/dalvik/system/InMemoryDexClassLoader#g' path/to/file
+          grep -rl 'dalvik/system/InMemoryDexClassLoader' . \
+             --exclude-dir=.git \
+             --exclude='*.dex' \
+             --exclude='*.apk' \
+             --exclude='*.so' \
+          | xargs -r sed -i 's#dalvik/system/InMemoryDexClassLoader#oldlib/dalvik/system/InMemoryDexClassLoader#g'
           
     - name: 設定快取
       uses: actions/cache@v4
