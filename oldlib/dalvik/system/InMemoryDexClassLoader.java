@@ -1,13 +1,10 @@
 package oldlib.dalvik.system;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import dalvik.system.DexClassLoader;
+public final class InMemoryDexClassLoader extends ClassLoader {
 
-public final class InMemoryDexClassLoader extends DexClassLoader {
+    private final long cookie;
 
     public InMemoryDexClassLoader(
             ByteBuffer buffer,
@@ -18,92 +15,51 @@ public final class InMemoryDexClassLoader extends DexClassLoader {
     public InMemoryDexClassLoader(
             ByteBuffer[] buffers,
             ClassLoader parent) {
-        this(createDexPath(buffers), parent);
-    }
+        super(parent);
 
-    private InMemoryDexClassLoader(
-            DexPath path,
-            ClassLoader parent) {
-        super(
-                path.dexFile.getAbsolutePath(),
-                path.optimizedDirectory.getAbsolutePath(),
-                null,
-                parent
-        );
-    }
-
-    private static DexPath createDexPath(ByteBuffer[] buffers) {
-        if (buffers == null || buffers.length == 0) {
+        if (buffers == null || buffers.length == 0)
             throw new NullPointerException("buffers");
+
+        for (ByteBuffer b : buffers) {
+            if (b == null)
+                throw new NullPointerException("buffer");
+            if (!b.isDirect())
+                throw new IllegalArgumentException(
+                        "DEX buffer must be direct");
+            if (!b.hasRemaining())
+                throw new IllegalArgumentException(
+                        "DEX buffer is empty");
         }
 
-        try {
-            File root = new File(
-                    System.getProperty("java.io.tmpdir"),
-                    "oldlib-dex"
-            );
+        cookie = nativeOpen(buffers, parent);
 
-            if (!root.exists() && !root.mkdirs()) {
-                throw new IOException(
-                        "Unable to create dex directory: "
-                                + root
-                );
-            }
-
-            File dexFile = File.createTempFile(
-                    "memory-",
-                    ".dex",
-                    root
-            );
-
-            try (FileOutputStream out =
-                         new FileOutputStream(dexFile)) {
-
-                byte[] tmp = new byte[8192];
-
-                for (ByteBuffer buffer : buffers) {
-                    if (buffer == null) {
-                        throw new NullPointerException("buffer");
-                    }
-                    
-                    ByteBuffer copy = buffer.duplicate();
-
-                    while (copy.hasRemaining()) {
-                        int count = Math.min(
-                                copy.remaining(),
-                                tmp.length
-                        );
-
-                        copy.get(tmp, 0, count);
-                        out.write(tmp, 0, count);
-                    }
-                }
-
-                out.flush();
-            }
-
-            return new DexPath(
-                    dexFile,
-                    root
-            );
-
-        } catch (IOException e) {
+        if (cookie == 0)
             throw new RuntimeException(
-                    "Unable to create temporary dex",
-                    e
-            );
-        }
+                    "Unable to open DEX from memory");
     }
 
-    private static final class DexPath {
-        final File dexFile;
-        final File optimizedDirectory;
+    @Override
+    protected Class<?> findClass(String name)
+            throws ClassNotFoundException {
 
-        DexPath(
-                File dexFile,
-                File optimizedDirectory) {
-            this.dexFile = dexFile;
-            this.optimizedDirectory = optimizedDirectory;
-        }
+        Class<?> result =
+                nativeFindClass(
+                        name,
+                        cookie,
+                        this);
+
+        if (result == null)
+            throw new ClassNotFoundException(name);
+
+        return result;
     }
-        }
+
+    private static native long nativeOpen(
+            ByteBuffer[] buffers,
+            ClassLoader parent);
+
+    private static native Class<?> nativeFindClass(
+            String name,
+            long cookie,
+            ClassLoader loader);
+    }
