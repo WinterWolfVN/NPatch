@@ -10,31 +10,29 @@ import dalvik.system.DexClassLoader;
 public final class InMemoryDexClassLoader extends DexClassLoader {
 
     public InMemoryDexClassLoader(
-            ByteBuffer[] buffers,
-            ClassLoader parent) {
-        this(createDexPath(buffers), parent);
-    }
-
-    public InMemoryDexClassLoader(
             ByteBuffer buffer,
             ClassLoader parent) {
         this(new ByteBuffer[]{buffer}, parent);
+    }
+
+    public InMemoryDexClassLoader(
+            ByteBuffer[] buffers,
+            ClassLoader parent) {
+        this(createDexPath(buffers), parent);
     }
 
     private InMemoryDexClassLoader(
             DexPath path,
             ClassLoader parent) {
         super(
-                path.dex.getAbsolutePath(),
-                path.optimized.getAbsolutePath(),
+                path.dexFile.getAbsolutePath(),
+                path.optimizedDirectory.getAbsolutePath(),
                 null,
                 parent
         );
     }
 
-    private static DexPath createDexPath(
-            ByteBuffer[] buffers) {
-
+    private static DexPath createDexPath(ByteBuffer[] buffers) {
         if (buffers == null || buffers.length == 0) {
             throw new NullPointerException("buffers");
         }
@@ -42,71 +40,70 @@ public final class InMemoryDexClassLoader extends DexClassLoader {
         try {
             File root = new File(
                     System.getProperty("java.io.tmpdir"),
-                    "dex"
+                    "oldlib-dex"
             );
 
             if (!root.exists() && !root.mkdirs()) {
                 throw new IOException(
-                        "Cannot create optimized directory"
+                        "Unable to create dex directory: "
+                                + root
                 );
             }
 
-            File dex = File.createTempFile(
+            File dexFile = File.createTempFile(
                     "memory-",
                     ".dex",
                     root
             );
 
             try (FileOutputStream out =
-                         new FileOutputStream(dex)) {
+                         new FileOutputStream(dexFile)) {
 
-                byte[] data = new byte[8192];
+                byte[] tmp = new byte[8192];
 
                 for (ByteBuffer buffer : buffers) {
                     if (buffer == null) {
-                        throw new NullPointerException(
-                                "buffer"
-                        );
+                        throw new NullPointerException("buffer");
                     }
-
-                    ByteBuffer copy = buffer.slice();
+                    
+                    ByteBuffer copy = buffer.duplicate();
 
                     while (copy.hasRemaining()) {
-                        int length = Math.min(
+                        int count = Math.min(
                                 copy.remaining(),
-                                data.length
+                                tmp.length
                         );
 
-                        copy.get(data, 0, length);
-                        out.write(data, 0, length);
+                        copy.get(tmp, 0, count);
+                        out.write(tmp, 0, count);
                     }
                 }
+
+                out.flush();
             }
 
-            File optimized = new File(
-                    root,
-                    dex.getName() + ".odex"
-            );
-
             return new DexPath(
-                    dex,
-                    optimized
+                    dexFile,
+                    root
             );
 
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Unable to create temporary dex",
+                    e
+            );
         }
     }
 
     private static final class DexPath {
-        final File dex;
-        final File optimized;
+        final File dexFile;
+        final File optimizedDirectory;
 
         DexPath(
-                File dex,
-                File optimized) {
-            this.dex = dex;
-            this.optimized = optimized;
+                File dexFile,
+                File optimizedDirectory) {
+            this.dexFile = dexFile;
+            this.optimizedDirectory = optimizedDirectory;
         }
     }
-            }
+        }
