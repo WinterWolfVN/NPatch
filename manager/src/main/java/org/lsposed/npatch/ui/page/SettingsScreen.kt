@@ -21,13 +21,11 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpOffset
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.coroutines.launch
 import org.lsposed.npatch.R
 import org.lsposed.npatch.config.Configs
@@ -45,7 +43,6 @@ import java.security.KeyStore
 
 private const val TAG = "SettingsScreen"
 
-@Destination
 @Composable
 fun SettingsScreen() {
     Scaffold(
@@ -261,7 +258,7 @@ private fun Language() {
     val systemDefault = stringResource(R.string.settings_language_system)
     val languages = remember(systemDefault) {
         linkedMapOf(
-            "" to systemDefault,
+            "" to "settings_language_system",
             "af" to "Afrikaans",
             "ar" to "العربية",
             "bg" to "Български",
@@ -308,21 +305,11 @@ private fun Language() {
         )
     }
     
-
+    val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
-
-    val currentTag = remember {        
-            AppCompatDelegate.getApplicationLocales()
-                .toLanguageTags()
-                .takeIf { it.isNotEmpty() && it != "und" }
-                ?: ""        
-    }
-
+    val currentTag = remember { AppCompatDelegate.getApplicationLocales().toLanguageTags().takeIf { it.isNotEmpty() && it != "und" }?: systemDefault }
     val currentLabel = remember(currentTag, systemDefault) {
-        languages.entries.firstOrNull { (tag, _) ->
-            tag.isNotEmpty() && currentTag.startsWith(tag)
-        }?.value ?: systemDefault
-    }
+        languages.entries.firstOrNull { (tag, _) -> tag.isNotEmpty() && currentTag.startsWith(tag)}?.value ?: systemDefault }
 
     Box {
         SettingsItem(
