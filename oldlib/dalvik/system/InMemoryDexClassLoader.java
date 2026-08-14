@@ -1,14 +1,23 @@
 package oldlib.dalvik.system;
 
+import dalvik.system.DexClassLoader;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 
-public final class InMemoryDexClassLoader extends ClassLoader {
+public final class InMemoryDexClassLoader
+        extends ClassLoader {
 
-    private final Object cookie;
+    private final DexClassLoader delegate;
+    private final File dexFile;
 
     public InMemoryDexClassLoader(
             ByteBuffer buffer,
             ClassLoader parent) {
+
         this(new ByteBuffer[]{buffer}, parent);
     }
 
@@ -22,27 +31,40 @@ public final class InMemoryDexClassLoader extends ClassLoader {
             throw new NullPointerException("buffers");
         }
 
-        for (ByteBuffer b : buffers) {
-            if (b == null) {
-                throw new NullPointerException("buffer");
+        try {
+            File root = getCacheRoot();
+            cleanupOldFiles(root);
+
+            File optimizedDir =
+                    new File(root, "optimized");
+
+            if (!optimizedDir.exists()
+                    && !optimizedDir.mkdirs()
+                    && !optimizedDir.isDirectory()) {
+                throw new IOException(
+                        "Unable to create optimized directory: "
+                                + optimizedDir);
             }
 
-            if (!b.isDirect()) {
-                throw new IllegalArgumentException(
-                        "buffer must be a direct ByteBuffer");
-            }
+            dexFile = new File(
+                    root,
+                    "dex_" + UUID.randomUUID().toString()
+                            + ".dex");
 
-            if (!b.hasRemaining()) {
-                throw new IllegalArgumentException(
-                        "buffer is empty");
-            }
-        }
+            writeDex(buffers, dexFile);
 
-        cookie = nativeOpen(buffers, parent);
+            delegate = new DexClassLoader(
+                    dexFile.getAbsolutePath(),
+                    optimizedDir.getAbsolutePath(),
+                    null,
+                    parent
+            );
 
-        if (cookie == null) {
+        } catch (IOException e) {
             throw new RuntimeException(
-                    "Unable to create in-memory DEX cookie");
+                    "Unable to create DexClassLoader",
+                    e
+            );
         }
     }
 
@@ -50,25 +72,119 @@ public final class InMemoryDexClassLoader extends ClassLoader {
     protected Class<?> findClass(String name)
             throws ClassNotFoundException {
 
-        Class<?> c = nativeFindClass(
-                name.replace('.', '/'),
-                cookie,
-                this
-        );
-
-        if (c == null) {
-            throw new ClassNotFoundException(name);
-        }
-
-        return c;
+        return delegate.loadClass(name);
     }
 
-    private static native Object nativeOpen(
-            ByteBuffer[] buffers,
-            ClassLoader parent);
+    private static File getCacheRoot()
+            throws IOException {
 
-    private static native Class<?> nativeFindClass(
-            String name,
-            Object cookie,
-            ClassLoader loader);
+        String cache =
+                System.getProperty("java.io.tmpdir");
+
+        if (cache == null || cache.length() == 0) {
+            throw new IOException(
+                    "Temporary directory unavailable");
+        }
+
+        File root =
+                new File(cache, "oldlib-dex");
+
+        if (!root.exists()
+                && !root.mkdirs()
+                && !root.isDirectory()) {
+            throw new IOException(
+                    "Unable to create cache directory: "
+                            + root);
+        }
+
+        return root;
+    }
+
+    private static void writeDex(
+            ByteBuffer[] buffers,
+            File output)
+            throws IOException {
+
+        FileOutputStream out =
+                new FileOutputStream(output);
+
+        try {
+            byte[] temp = new byte[8192];
+
+            for (ByteBuffer source : buffers) {
+
+                if (source == null) {
+                    throw new NullPointerException(
+                            "buffer");
+                }
+
+                ByteBuffer buffer =
+                        source.duplicate();
+
+                while (buffer.hasRemaining()) {
+
+                    int count =
+                            Math.min(
+                                    buffer.remaining(),
+                                    temp.length
+                            );
+
+                    buffer.get(
+                            temp,
+                            0,
+                            count
+                    );
+
+                    out.write(
+                            temp,
+                            0,
+                            count
+                    );
+                }
+            }
+
+            out.flush();
+
+        } finally {
+            out.close();
+        }
+    }
+
+    private static void cleanupOldFiles(
+            File root) {
+
+        File[] files =
+                root.listFiles();
+
+        if (files == null) {
+            return;
+        }
+
+        long now =
+                System.currentTimeMillis();
+
+        long maxAge =
+                24L * 60L * 60L * 1000L;
+
+        for (File file : files) {
+
+            if (!file.isFile()) {
+                continue;
+            }
+
+            String name =
+                    file.getName();
+
+            if (!name.startsWith("dex_")
+                    || !name.endsWith(".dex")) {
+                continue;
+            }
+
+            if (now - file.lastModified()
+                    > maxAge) {
+                // Best-effort cleanup.
+                file.delete();
+            }
+        }
+    }
             }
