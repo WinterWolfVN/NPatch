@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 public final class InMemoryDexClassLoader extends ClassLoader {
 
-    private final long cookie;
+    private final Object cookie;
 
     public InMemoryDexClassLoader(
             ByteBuffer buffer,
@@ -15,51 +15,60 @@ public final class InMemoryDexClassLoader extends ClassLoader {
     public InMemoryDexClassLoader(
             ByteBuffer[] buffers,
             ClassLoader parent) {
+
         super(parent);
 
-        if (buffers == null || buffers.length == 0)
+        if (buffers == null || buffers.length == 0) {
             throw new NullPointerException("buffers");
+        }
 
         for (ByteBuffer b : buffers) {
-            if (b == null)
+            if (b == null) {
                 throw new NullPointerException("buffer");
-            if (!b.isDirect())
+            }
+
+            if (!b.isDirect()) {
                 throw new IllegalArgumentException(
-                        "DEX buffer must be direct");
-            if (!b.hasRemaining())
+                        "buffer must be a direct ByteBuffer");
+            }
+
+            if (!b.hasRemaining()) {
                 throw new IllegalArgumentException(
-                        "DEX buffer is empty");
+                        "buffer is empty");
+            }
         }
 
         cookie = nativeOpen(buffers, parent);
 
-        if (cookie == 0)
+        if (cookie == null) {
             throw new RuntimeException(
-                    "Unable to open DEX from memory");
+                    "Unable to create in-memory DEX cookie");
+        }
     }
 
     @Override
     protected Class<?> findClass(String name)
             throws ClassNotFoundException {
 
-        Class<?> result =
-                nativeFindClass(
-                        name,
-                        cookie,
-                        this);
+        Class<?> c = nativeFindClass(
+                name.replace('.', '/'),
+                cookie,
+                this
+        );
 
-        if (result == null)
+        if (c == null) {
             throw new ClassNotFoundException(name);
+        }
 
-        return result;
+        return c;
     }
 
-    private static native long nativeOpen(
+    private static native Object nativeOpen(
             ByteBuffer[] buffers,
             ClassLoader parent);
 
     private static native Class<?> nativeFindClass(
             String name,
-            long cookie,
+            Object cookie,
             ClassLoader loader);
-    }
+            }
