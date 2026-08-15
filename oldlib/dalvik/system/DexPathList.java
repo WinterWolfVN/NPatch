@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -45,15 +47,13 @@ public final class DexPathList {
             ByteBuffer[] buffers) {
 
         this.definingContext = definingContext;
-
-        this.dexElements =
-                makeInMemoryDexElements(buffers);
+        List<IOException> suppressedExceptions = new ArrayList<IOException>();
+        this.dexElements = makeInMemoryDexElements(buffers, suppressedExceptions);
     }
 
     private static Element[] makeInMemoryDexElements(
         ByteBuffer[] dexFiles,
         List<IOException> suppressedExceptions) {
-
     Element[] elements = new Element[dexFiles.length];
     int elementPos = 0;
 
@@ -68,24 +68,19 @@ public final class DexPathList {
                     0
             );
 
-            elements[elementPos++] =
-                    new Element(dex);
-
+            elements[elementPos++] = new Element(dex);
         } catch (IOException e) {
-            suppressedExceptions.add(e);
-            System.logE(
-                    "Unable to load dex file: " + buf,
-                    e
-            );
+            suppressedExceptions.add(e);            
+             }
         }
     }
 
     if (elementPos != elements.length) {
-        elements = Arrays.copyOf(
-                elements,
-                elementPos
-        );
-    }
+        Element[] trimmed =
+        new Element[elementPos];
+        System.arraycopy(elements, 0, trimmed, 0, elementPos);
+        elements = trimmed;
+        }
     return elements;
     }
     
@@ -111,51 +106,35 @@ public final class DexPathList {
             root
     );
 
-    FileOutputStream output =
-            new FileOutputStream(dexFile);
+    FileOutputStream output = new FileOutputStream(dexFile);
 
     try {        
-        ByteBuffer buffer =
-            source.duplicate();
-        byte[] temp =
-                new byte[8192];
+        ByteBuffer buffer = source.duplicate();
+        byte[] temp = new byte[8192];
         while (buffer.hasRemaining()) {
             int count = Math.min(
                     buffer.remaining(),
                     temp.length
             );
 
-            buffer.get(
-                    temp,
-                    0,
-                    count
-            );
-
-            output.write(
-                    temp,
-                    0,
-                    count
-            );
+            buffer.get(temp, 0, count);
+            output.write(temp, 0, count);
         }
-
         output.flush();
 
     } finally {
         output.close();
     }
-
     return dexFile;
         }
 
     private Element[] makeDexElements(
             String dexPath,
             File optimizedDirectory) {
-        ArrayList<Element> result =
-                new ArrayList<Element>();
+        ArrayList<Element> result = new ArrayList<Element>();
         if (dexPath.length() == 0) {
             return new Element[0];
         }
-
         String[] paths =
                 dexPath.split(
                         java.util.regex.Pattern.quote(
@@ -164,11 +143,9 @@ public final class DexPathList {
                 );
 
         for (String path : paths) {
-
             if (path.length() == 0) {
                 continue;
-            }
-
+           }
             try {
                 DexFile dex = DexFile.loadDex(
                         path,
@@ -178,9 +155,7 @@ public final class DexPathList {
                         0
                 );
 
-                result.add(
-                        new Element(dex)
-                );
+                result.add(new Element(dex));
 
             } catch (IOException e) {
                 throw new RuntimeException(
@@ -190,9 +165,7 @@ public final class DexPathList {
             }
         }
 
-        return result.toArray(
-                new Element[result.size()]
-        );
+        return result.toArray(new Element[result.size()]);
     }
 
     Class<?> findClass(
@@ -200,15 +173,16 @@ public final class DexPathList {
             List<Throwable> suppressed) {
         for (Element element : dexElements) {
 
-            Class<?> clazz =
-                    element.dexFile.loadClassBinaryName(
-                            name,
-                            definingContext,
-                            suppressed
-                    );
+            try {
+                Class<?> clazz = element.dexFile.loadClass(name, definingContext);
 
             if (clazz != null) {
-                return clazz;
+               return clazz;
+                }
+            } catch (Throwable e) {
+                 if (suppressed != null) {
+                    suppressed.add(e);
+                 }
             }
         }
 
@@ -262,9 +236,7 @@ public final class DexPathList {
     public java.util.Enumeration<java.net.URL>
     findResources(String name)
             throws IOException {
-        return java.util.Collections
-                .<java.net.URL>emptyList()
-                .iterator();
+        return Collections.enumeration(Collections.<URL>emptyList());
     }
 
     public List<File>
