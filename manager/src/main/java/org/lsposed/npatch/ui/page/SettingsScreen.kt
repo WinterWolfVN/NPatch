@@ -260,7 +260,7 @@ private fun Language() {
     val systemDefault = stringResource(R.string.settings_language_system)
     val languages = remember(systemDefault) {
         linkedMapOf(
-            "" to "settings_language_system",
+            "" to systemDefault,
             "af" to "Afrikaans",
             "ar" to "العربية",
             "bg" to "Български",
