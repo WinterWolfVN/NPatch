@@ -37,12 +37,14 @@ import org.lsposed.npatch.ui.component.settings.SettingsSwitch
 import org.lsposed.npatch.ui.util.LocalSnackbarHost
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import com.ramcosta.composedestinations.annotation.Destination
 import java.io.IOException
 import java.security.GeneralSecurityException
 import java.security.KeyStore
 
 private const val TAG = "SettingsScreen"
 
+@Destination
 @Composable
 fun SettingsScreen() {
     Scaffold(
