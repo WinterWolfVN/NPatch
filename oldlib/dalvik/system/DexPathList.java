@@ -50,140 +50,108 @@ public final class DexPathList {
                 makeInMemoryDexElements(buffers);
     }
 
-    private Element[] makeInMemoryDexElements(
-            ByteBuffer[] buffers) {
+    private static Element[] makeInMemoryDexElements(
+        ByteBuffer[] dexFiles,
+        List<IOException> suppressedExceptions) {
 
-        ArrayList<Element> result =
-                new ArrayList<Element>();
+    Element[] elements = new Element[dexFiles.length];
+    int elementPos = 0;
 
-        for (ByteBuffer original : buffers) {
+    for (ByteBuffer buf : dexFiles) {
+        try {            
+            File dexFile = createTemporaryDexFile(buf);
+            File optimizedDirectory =
+                    dexFile.getParentFile();
+            DexFile dex = DexFile.loadDex(
+                    dexFile.getAbsolutePath(),
+                    optimizedDirectory.getAbsolutePath(),
+                    0
+            );
 
-            if (original == null) {
-                throw new NullPointerException(
-                        "dex buffer == null"
-                );
-            }
+            elements[elementPos++] =
+                    new Element(dex);
 
-            File dexFile = null;
-
-            try {
-                dexFile = createTemporaryDex(original);
-
-                File optimized =
-                        new File(
-                                dexFile.getParentFile(),
-                                "optimized"
-                        );
-
-                if (!optimized.exists()
-                        && !optimized.mkdirs()
-                        && !optimized.isDirectory()) {
-
-                    throw new IOException(
-                            "Cannot create optimized directory"
-                    );
-                }
-
-                DexFile dex = DexFile.loadDex(
-                        dexFile.getAbsolutePath(),
-                        optimized.getAbsolutePath(),
-                        0
-                );
-
-                result.add(
-                        new Element(dex)
-                );
-
-                temporaryDexFiles.add(dexFile);
-
-            } catch (IOException e) {
-
-                if (dexFile != null) {
-                    dexFile.delete();
-                }
-
-                throw new RuntimeException(
-                        "Unable to load DEX from ByteBuffer",
-                        e
-                );
-            }
+        } catch (IOException e) {
+            suppressedExceptions.add(e);
+            System.logE(
+                    "Unable to load dex file: " + buf,
+                    e
+            );
         }
+    }
 
-        return result.toArray(
-                new Element[result.size()]
+    if (elementPos != elements.length) {
+        elements = Arrays.copyOf(
+                elements,
+                elementPos
+        );
+    }
+    return elements;
+    }
+    
+    private static File createTemporaryDexFile(
+        ByteBuffer source)
+        throws IOException {
+    File root = new File(
+            System.getProperty("java.io.tmpdir"),
+            "oldlib-dex"
+    );
+
+    if (!root.exists()
+            && !root.mkdirs()
+            && !root.isDirectory()) {
+        throw new IOException(
+                "Unable to create " + root
         );
     }
 
-    private static File createTemporaryDex(
-            ByteBuffer original)
-            throws IOException {
+    File dexFile = File.createTempFile(
+            "memory-",
+            ".dex",
+            root
+    );
 
-        File root = new File(
-                System.getProperty("java.io.tmpdir"),
-                "oldlib-dex"
-        );
+    FileOutputStream output =
+            new FileOutputStream(dexFile);
 
-        if (!root.exists()
-                && !root.mkdirs()
-                && !root.isDirectory()) {
+    try {        
+        ByteBuffer buffer =
+            source.duplicate();
+        byte[] temp =
+                new byte[8192];
+        while (buffer.hasRemaining()) {
+            int count = Math.min(
+                    buffer.remaining(),
+                    temp.length
+            );
 
-            throw new IOException(
-                    "Cannot create " + root
+            buffer.get(
+                    temp,
+                    0,
+                    count
+            );
+
+            output.write(
+                    temp,
+                    0,
+                    count
             );
         }
 
-        File output = new File(
-                root,
-                "memory-" +
-                UUID.randomUUID().toString() +
-                ".dex"
-        );
+        output.flush();
 
-        FileOutputStream out =
-                new FileOutputStream(output);
-
-        try {
-            ByteBuffer buffer =
-                    original.duplicate();
-
-            byte[] temp = new byte[8192];
-
-            while (buffer.hasRemaining()) {
-
-                int count = Math.min(
-                        buffer.remaining(),
-                        temp.length
-                );
-
-                buffer.get(
-                        temp,
-                        0,
-                        count
-                );
-
-                out.write(
-                        temp,
-                        0,
-                        count
-                );
-            }
-
-            out.flush();
-
-        } finally {
-            out.close();
-        }
-
-        return output;
+    } finally {
+        output.close();
     }
+
+    return dexFile;
+        }
 
     private Element[] makeDexElements(
             String dexPath,
             File optimizedDirectory) {
-
         ArrayList<Element> result =
                 new ArrayList<Element>();
-
         if (dexPath.length() == 0) {
             return new Element[0];
         }
@@ -230,7 +198,6 @@ public final class DexPathList {
     Class<?> findClass(
             String name,
             List<Throwable> suppressed) {
-
         for (Element element : dexElements) {
 
             Class<?> clazz =
@@ -251,7 +218,6 @@ public final class DexPathList {
     public void addDexPath(
             String path,
             List<IOException> suppressed) {
-
         Element[] newElements =
                 makeDexElements(
                         path,
@@ -260,7 +226,6 @@ public final class DexPathList {
 
         Element[] old =
                 dexElements;
-
         Element[] merged =
                 new Element[
                         old.length +
