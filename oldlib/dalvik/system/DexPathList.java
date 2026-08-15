@@ -52,41 +52,59 @@ public final class DexPathList {
     }
 
     private static Element[] makeInMemoryDexElements(
-        ByteBuffer[] dexFiles,
+        ByteBuffer[] buffers,
         List<IOException> suppressedExceptions) {
-    Element[] elements = new Element[dexFiles.length];
+
+    Element[] elements =
+            new Element[buffers.length];
+
     int elementPos = 0;
 
-    for (ByteBuffer buf : dexFiles) {
-        try {            
-            File dexFile = createTemporaryDexFile(buf);
+    for (ByteBuffer buf : buffers) {
+        try {
+            File dexFile =
+                    createTemporaryDexFile(buf);
+
             File optimizedDirectory =
                     dexFile.getParentFile();
+
             DexFile dex = DexFile.loadDex(
                     dexFile.getAbsolutePath(),
                     optimizedDirectory.getAbsolutePath(),
                     0
             );
 
-            elements[elementPos++] = new Element(dex);
+            elements[elementPos++] =
+                    new Element(dex);
+
         } catch (IOException e) {
-            suppressedExceptions.add(e);            
-             }
+            if (suppressedExceptions != null) {
+                suppressedExceptions.add(e);
+            }
         }
     }
 
     if (elementPos != elements.length) {
         Element[] trimmed =
-        new Element[elementPos];
-        System.arraycopy(elements, 0, trimmed, 0, elementPos);
+                new Element[elementPos];
+
+        System.arraycopy(
+                elements,
+                0,
+                trimmed,
+                0,
+                elementPos
+        );
+
         elements = trimmed;
-        }
-    return elements;
     }
-    
-    private static File createTemporaryDexFile(
-        ByteBuffer source)
-        throws IOException {
+
+    return elements;
+}
+
+private static File createTemporaryDexFile(
+        ByteBuffer source) throws IOException {
+
     File root = new File(
             System.getProperty("java.io.tmpdir"),
             "oldlib-dex"
@@ -96,7 +114,7 @@ public final class DexPathList {
             && !root.mkdirs()
             && !root.isDirectory()) {
         throw new IOException(
-                "Unable to create " + root
+                "Cannot create " + root
         );
     }
 
@@ -106,11 +124,15 @@ public final class DexPathList {
             root
     );
 
-    FileOutputStream output = new FileOutputStream(dexFile);
+    FileOutputStream output =
+            new FileOutputStream(dexFile);
 
-    try {        
-        ByteBuffer buffer = source.duplicate();
+    try {
+        ByteBuffer buffer =
+                source.duplicate();
+
         byte[] temp = new byte[8192];
+
         while (buffer.hasRemaining()) {
             int count = Math.min(
                     buffer.remaining(),
@@ -120,13 +142,15 @@ public final class DexPathList {
             buffer.get(temp, 0, count);
             output.write(temp, 0, count);
         }
+
         output.flush();
 
     } finally {
         output.close();
     }
+
     return dexFile;
-        }
+    }
 
     private Element[] makeDexElements(
             String dexPath,
