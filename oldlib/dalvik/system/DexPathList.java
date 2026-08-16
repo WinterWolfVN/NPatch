@@ -7,9 +7,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,123 +43,219 @@ public final class DexPathList {
         );
     }
 
+    /*
+     * Android 7/API 25 backport:
+     * ByteBuffer -> temporary .dex -> DexFile.loadDex()
+     */
     DexPathList(
             ClassLoader definingContext,
             ByteBuffer[] buffers) {
 
         this.definingContext = definingContext;
-        List<IOException> suppressedExceptions = new ArrayList<IOException>();
-        this.dexElements = makeInMemoryDexElements(buffers, suppressedExceptions);
+
+        List<IOException> suppressedExceptions =
+                new ArrayList<IOException>();
+
+        this.dexElements =
+                makeInMemoryDexElements(
+                        buffers,
+                        suppressedExceptions
+                );
     }
 
-    private static Element[] makeInMemoryDexElements(
-        ByteBuffer[] buffers,
-        List<IOException> suppressedExceptions) {
+    private Element[] makeInMemoryDexElements(
+            ByteBuffer[] buffers,
+            List<IOException> suppressedExceptions) {
 
-    Element[] elements =
-            new Element[buffers.length];
+        Element[] elements =
+                new Element[buffers.length];
 
-    int elementPos = 0;
+        int elementPos = 0;
 
-    for (ByteBuffer buf : buffers) {
-        try {
-            File dexFile =
-                    createTemporaryDexFile(buf);
+        for (ByteBuffer buffer : buffers) {
 
-            File optimizedDirectory =
-                    dexFile.getParentFile();
+            if (buffer == null) {
+                if (suppressedExceptions != null) {
+                    suppressedExceptions.add(
+                            new IOException(
+                                    "ByteBuffer == null"
+                            )
+                    );
+                }
 
-            DexFile dex = DexFile.loadDex(
-                    dexFile.getAbsolutePath(),
-                    optimizedDirectory.getAbsolutePath(),
-                    0
-            );
+                continue;
+            }
 
-            elements[elementPos++] =
-                    new Element(dex);
+            File dexFile = null;
 
-        } catch (IOException e) {
-            if (suppressedExceptions != null) {
-                suppressedExceptions.add(e);
+            try {
+
+                dexFile =
+                        createTemporaryDexFile(
+                                buffer
+                        );
+
+                /*
+                 * dex2oat/odex output is kept separate
+                 * from the input temporary dex.
+                 */
+                File optimizedDirectory =
+                        new File(
+                                dexFile.getParentFile(),
+                                "optimized"
+                        );
+
+                if (!optimizedDirectory.exists()
+                        && !optimizedDirectory.mkdirs()
+                        && !optimizedDirectory.isDirectory()) {
+
+                    throw new IOException(
+                            "Cannot create optimized directory: "
+                                    + optimizedDirectory
+                    );
+                }
+
+                DexFile dex =
+                        DexFile.loadDex(
+                                dexFile.getAbsolutePath(),
+                                optimizedDirectory.getAbsolutePath(),
+                                0
+                        );
+
+                if (dex == null) {
+                    throw new IOException(
+                            "DexFile.loadDex() returned null"
+                    );
+                }
+
+                elements[elementPos++] =
+                        new Element(dex);
+
+                temporaryDexFiles.add(
+                        dexFile
+                );
+
+            } catch (IOException e) {
+
+                if (suppressedExceptions != null) {
+                    suppressedExceptions.add(e);
+                }
+
+                if (dexFile != null) {
+                    dexFile.delete();
+                }
             }
         }
-    }
 
-    if (elementPos != elements.length) {
-        Element[] trimmed =
-                new Element[elementPos];
+        if (elementPos != elements.length) {
 
-        System.arraycopy(
-                elements,
-                0,
-                trimmed,
-                0,
-                elementPos
-        );
+            Element[] trimmed =
+                    new Element[elementPos];
 
-        elements = trimmed;
-    }
-
-    return elements;
-}
-
-private static File createTemporaryDexFile(
-        ByteBuffer source) throws IOException {
-
-    File root = new File(
-            System.getProperty("java.io.tmpdir"),
-            "oldlib-dex"
-    );
-
-    if (!root.exists()
-            && !root.mkdirs()
-            && !root.isDirectory()) {
-        throw new IOException(
-                "Cannot create " + root
-        );
-    }
-
-    File dexFile = File.createTempFile(
-            "memory-",
-            ".dex",
-            root
-    );
-
-    FileOutputStream output =
-            new FileOutputStream(dexFile);
-
-    try {
-        ByteBuffer buffer =
-                source.duplicate();
-
-        byte[] temp = new byte[8192];
-
-        while (buffer.hasRemaining()) {
-            int count = Math.min(
-                    buffer.remaining(),
-                    temp.length
+            System.arraycopy(
+                    elements,
+                    0,
+                    trimmed,
+                    0,
+                    elementPos
             );
 
-            buffer.get(temp, 0, count);
-            output.write(temp, 0, count);
+            elements = trimmed;
         }
 
-        output.flush();
-
-    } finally {
-        output.close();
+        return elements;
     }
 
-    return dexFile;
+    /*
+     * Copy the ByteBuffer using Java APIs only.
+     *
+     * duplicate() is intentional:
+     * the caller's position/limit are not changed.
+     */
+    private static File createTemporaryDexFile(
+            ByteBuffer source)
+            throws IOException {
+
+        File root =
+                new File(
+                        System.getProperty(
+                                "java.io.tmpdir"
+                        ),
+                        "oldlib-dex"
+                );
+
+        if (!root.exists()
+                && !root.mkdirs()
+                && !root.isDirectory()) {
+
+            throw new IOException(
+                    "Cannot create " + root
+            );
+        }
+
+        File dexFile =
+                new File(
+                        root,
+                        "memory-" +
+                        UUID.randomUUID().toString() +
+                        ".dex"
+                );
+
+        FileOutputStream output =
+                new FileOutputStream(
+                        dexFile
+                );
+
+        try {
+
+            ByteBuffer buffer =
+                    source.duplicate();
+
+            byte[] temp =
+                    new byte[8192];
+
+            while (buffer.hasRemaining()) {
+
+                int count =
+                        Math.min(
+                                buffer.remaining(),
+                                temp.length
+                        );
+
+                buffer.get(
+                        temp,
+                        0,
+                        count
+                );
+
+                output.write(
+                        temp,
+                        0,
+                        count
+                );
+            }
+
+            output.flush();
+
+        } finally {
+
+            output.close();
+        }
+
+        return dexFile;
     }
 
     private Element[] makeDexElements(
             String dexPath,
             File optimizedDirectory) {
-        ArrayList<Element> result = new ArrayList<Element>();
+
+        ArrayList<Element> result =
+                new ArrayList<Element>();
+
         if (dexPath.length() == 0) {
             return new Element[0];
         }
+
         String[] paths =
                 dexPath.split(
                         java.util.regex.Pattern.quote(
@@ -168,21 +264,31 @@ private static File createTemporaryDexFile(
                 );
 
         for (String path : paths) {
+
             if (path.length() == 0) {
                 continue;
-           }
-            try {
-                DexFile dex = DexFile.loadDex(
-                        path,
-                        optimizedDirectory == null
-                                ? null
-                                : optimizedDirectory.getAbsolutePath(),
-                        0
-                );
+            }
 
-                result.add(new Element(dex));
+            try {
+
+                DexFile dex =
+                        DexFile.loadDex(
+                                path,
+                                optimizedDirectory == null
+                                        ? null
+                                        : optimizedDirectory
+                                            .getAbsolutePath(),
+                                0
+                        );
+
+                if (dex != null) {
+                    result.add(
+                            new Element(dex)
+                    );
+                }
 
             } catch (IOException e) {
+
                 throw new RuntimeException(
                         "Unable to load " + path,
                         e
@@ -190,24 +296,44 @@ private static File createTemporaryDexFile(
             }
         }
 
-        return result.toArray(new Element[result.size()]);
+        return result.toArray(
+                new Element[result.size()]
+        );
     }
 
+    /*
+     * Android 7/API 25 has:
+     *
+     * DexFile.loadClass(
+     *     String name,
+     *     ClassLoader loader
+     * )
+     *
+     * Do not use loadClassBinaryName().
+     */
     Class<?> findClass(
             String name,
             List<Throwable> suppressed) {
+
         for (Element element : dexElements) {
 
             try {
-                Class<?> clazz = element.dexFile.loadClass(name, definingContext);
 
-            if (clazz != null) {
-               return clazz;
+                Class<?> clazz =
+                        element.dexFile.loadClass(
+                                name,
+                                definingContext
+                        );
+
+                if (clazz != null) {
+                    return clazz;
                 }
+
             } catch (Throwable e) {
-                 if (suppressed != null) {
+
+                if (suppressed != null) {
                     suppressed.add(e);
-                 }
+                }
             }
         }
 
@@ -217,6 +343,7 @@ private static File createTemporaryDexFile(
     public void addDexPath(
             String path,
             List<IOException> suppressed) {
+
         Element[] newElements =
                 makeDexElements(
                         path,
@@ -225,6 +352,7 @@ private static File createTemporaryDexFile(
 
         Element[] old =
                 dexElements;
+
         Element[] merged =
                 new Element[
                         old.length +
@@ -247,44 +375,60 @@ private static File createTemporaryDexFile(
                 old.length
         );
 
-        dexElements = merged;
+        dexElements =
+                merged;
     }
 
-    public String findLibrary(String name) {
+    public String findLibrary(
+            String name) {
+
         return null;
     }
 
-    public java.net.URL findResource(String name) {
+    public URL findResource(
+            String name) {
+
         return null;
     }
 
-    public java.util.Enumeration<java.net.URL>
-    findResources(String name)
+    public Enumeration<URL> findResources(
+            String name)
             throws IOException {
-        return Collections.enumeration(Collections.<URL>emptyList());
+
+        return Collections.enumeration(
+                Collections.<URL>emptyList()
+        );
     }
 
     public List<File>
     getNativeLibraryDirectories() {
+
         return nativeLibraryDirectories;
     }
 
     public String toString() {
-        return "DexPathList" +
+
+        return "DexPathList[" +
                 dexElements.length +
-                " elements";
+                " elements]";
     }
 
     public static final class Element {
 
         final DexFile dexFile;
 
-        Element(DexFile dexFile) {
-            this.dexFile = dexFile;
+        Element(
+                DexFile dexFile) {
+
+            this.dexFile =
+                    dexFile;
         }
 
         public String toString() {
-            return String.valueOf(dexFile);
+
+            return String.valueOf(
+                    dexFile
+            );
         }
     }
-}
+        }
