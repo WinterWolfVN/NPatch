@@ -164,8 +164,7 @@ public final class DexPathList {
         Element(DexFile dexFile) {
             this.dexFile = dexFile;
         }
-    }
-
+    
         public String toString() {
             return String.valueOf(dexFile);
         }    
