@@ -13,9 +13,7 @@ public class BaseDexClassLoader extends ClassLoader {
             java.io.File optimizedDirectory,
             String librarySearchPath,
             ClassLoader parent) {
-
         super(parent);
-
         this.pathList = new DexPathList(
                 this,
                 dexPath,
@@ -24,39 +22,27 @@ public class BaseDexClassLoader extends ClassLoader {
         );
     }
 
-    protected BaseDexClassLoader(
-            ByteBuffer[] dexBuffers,
-            ClassLoader parent) {
-
-        super(parent);
-
+    protected BaseDexClassLoader(ByteBuffer[] dexFiles, ClassLoader parent) {
+          super(parent);
+          this.pathList = new DexPathList(this, dexFiles);
+          }
         if (dexBuffers == null) {
             throw new NullPointerException("dexBuffers == null");
         }
-
-        this.pathList = new DexPathList(
-                this,
-                dexBuffers
-        );
-    }
-
+    
     @Override
     protected Class<?> findClass(String name)
             throws ClassNotFoundException {
-
         List<Throwable> suppressed =
                 new ArrayList<Throwable>();
-
         Class<?> result =
                 pathList.findClass(
                         name,
                         suppressed
                 );
-
         if (result != null) {
             return result;
         }
-
         ClassNotFoundException e =
                 new ClassNotFoundException(
                         "Didn't find class \"" +
@@ -64,11 +50,9 @@ public class BaseDexClassLoader extends ClassLoader {
                         "\" on path: " +
                         pathList
                 );
-
         for (Throwable t : suppressed) {
             e.addSuppressed(t);
         }
-
         throw e;
     }
 
@@ -89,17 +73,13 @@ public class BaseDexClassLoader extends ClassLoader {
     public String getLdLibraryPath() {
         StringBuilder result =
                 new StringBuilder();
-
         for (java.io.File file :
                 pathList.getNativeLibraryDirectories()) {
-
             if (result.length() > 0) {
                 result.append(':');
             }
-
             result.append(file);
         }
-
         return result.toString();
     }
 
