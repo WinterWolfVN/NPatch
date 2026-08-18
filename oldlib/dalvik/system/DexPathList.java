@@ -34,8 +34,7 @@ public final class DexPathList {
      */
     DexPathList(ClassLoader definingContext, ByteBuffer[] dexFiles) {
          this(definingContext, makeInMemoryDexElements(dexFiles));
-         }
-    }
+         }    
 
     private static Element[] makeInMemoryDexElements(ByteBuffer[] dexFiles) {
        Element[] elements = new Element[dexFiles.length];
@@ -168,7 +167,6 @@ public final class DexPathList {
 
         public String toString() {
             return String.valueOf(dexFile);
-        }
-    }
+        }    
     }
         
