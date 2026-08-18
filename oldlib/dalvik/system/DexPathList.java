@@ -16,10 +16,9 @@ import java.util.UUID;
 public final class DexPathList {
     private final ClassLoader definingContext;
     private Element[] dexElements;
-
     private final List<File> temporaryDexFiles = new ArrayList<File>();
-
     private final List<File> nativeLibraryDirectories = new ArrayList<File>();
+    
     DexPathList(ClassLoader definingContext, String dexPath, String libraryPath, File optimizedDirectory) {
         this.definingContext = definingContext;
         if (dexPath == null) {
@@ -27,56 +26,28 @@ public final class DexPathList {
         }
         this.dexElements = makeDexElements(dexPath, optimizedDirectory);
     }
-
-    /*
-     * Android 7/API 25 backport:
-     * ByteBuffer -> temporary .dex -> DexFile.loadDex()
-     */
-    DexPathList(ClassLoader definingContext, ByteBuffer[] dexFiles) {
-         this(definingContext, makeInMemoryDexElements(dexFiles));
-         }    
-
-    private static Element[] makeInMemoryDexElements(ByteBuffer[] dexFiles) {
-       Element[] elements = new Element[dexFiles.length];
-       for (int i = 0; i < dexFiles.length; ++i) {
-           try {
-              DexFile dex = new DexFile(dexFiles[i]);
-              elements[i] = new Element(dex);
-           } catch (IOException e) {
-               throw new RuntimeException("Unable to load dex from memory", e);
-             }
-       }
-       return elements;
-    }
     
-    /*
-     * Copy the ByteBuffer using Java APIs only.
-     *
-     * duplicate() is intentional:
-     * the caller's position/limit are not changed.
-     */
-    private static File createTemporaryDexFile(ByteBuffer source)
-            throws IOException {
-        File root = new File(System.getProperty("java.io.tmpdir"), "oldlib-dex");
-        if (!root.exists()&& !root.mkdirs()&& !root.isDirectory()) {
-            throw new IOException("Cannot create " + root);
-        }
-        File dexFile = new File(root, "memory-" + UUID.randomUUID().toString() + ".dex");
-        FileOutputStream output = new FileOutputStream(dexFile);
-        try {
-            ByteBuffer buffer = source.duplicate();
-            byte[] temp = new byte[8192];
-            while (buffer.hasRemaining()) {
-                int count = Math.min(buffer.remaining(), temp.length);
-                buffer.get(temp, 0, count);
-                output.write(temp, 0, count);
-            }
-            output.flush();
-        } finally {
-            output.close();
-        }
-        return dexFile;
+    DexPathList(ClassLoader definingContext, ByteBuffer[] dexFiles) {
+        this.definingContext = definingContext;
+        this.nativeLibraryDirectories = new File[0];
+        this.systemNativeLibraryDirectories = new File[0];
+        this.nativeLibraryPathElements = new NativeLibraryElement[0];
+        this.dexElements = makeInMemoryDexElements(dexFiles);
     }
+
+    private static Element[] makeInMemoryDexElement(ByteBuffer[] dexFiles) {
+        Element[] elements = new Element[dexFiles.length];
+     for (int i = 0; i < dexFiles.length; i++) {
+         try {
+             DexFile dex = new DexFile(dexFiles[i]);
+             elements[i] = new Element(dex);
+         } catch (IOException e) {
+             throw new RuntimeException(
+                    "Unable to load dex file from memory", e);
+         }
+     }
+     return elements;
+}
 
     private Element[] makeDexElements(String dexPath, File optimizedDirectory) {
         ArrayList<Element> result = new ArrayList<Element>();
