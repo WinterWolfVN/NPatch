@@ -24,8 +24,8 @@ public class BaseDexClassLoader extends ClassLoader {
 
     protected BaseDexClassLoader(ByteBuffer[] dexFiles, ClassLoader parent) {
           super(parent);          
-            if (dexBuffers == null) {
-                throw new NullPointerException("dexBuffers == null");
+            if (dexFiles == null) {
+                throw new NullPointerException("dexFiles == null");
             }
             this.pathList = new DexPathList(this, dexFiles);
         }
