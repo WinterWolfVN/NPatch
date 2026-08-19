@@ -10,7 +10,8 @@ android {
     }        
     sourceSets {
         named("main") {
-            java.srcDir("${rootProject.projectDir}/oldlib")             
+            java.srcDir("${rootProject.projectDir}/oldlib")    
+            java.srcDir("${rootProject.projectDir}/dalvik")
         }
     }
     buildTypes {
@@ -24,11 +25,7 @@ android {
 
 androidComponents.onVariants { variant ->
     val variantCapped = variant.name.replaceFirstChar { it.uppercase() }
-    val variantLowered = variant.name.lowercase()
-    tasks.withType<JavaCompile>().configureEach {
-        source(file("${rootProject.projectDir}/oldlib/dalvik/system/InMemoryDexClassLoader.java"))
-        exclude("**/oldlib/android/**")
-    }
+    val variantLowered = variant.name.lowercase()    
     tasks.register<Copy>("copyDex$variantCapped") {
     dependsOn("assemble$variantCapped")
     val dexOutPath = if (variant.buildType == "release")
