@@ -119,10 +119,10 @@ static jobject openBytes(JNIEnv* env, const uint8_t* source, size_t size) {
     }
     jobject cookie = makeCookie(env, dexFile);
     if (cookie == nullptr) {
-        // The DexFile has already been created, so do not blindly munmap
-        // here; its lifetime is now owned by ART through the cookie.
+        delete reinterpret_cast<DexFile*>(const_cast<void*>(dexFile));
+        munmap(mapping, size);
         return nullptr;
-    }
+    }    
 
     {
         std::lock_guard<std::mutex> lock(gMutex);
