@@ -49,23 +49,20 @@ private DexFile(Object cookie) {
     this.mFileName = null;
 }
   
-private static Object openInMemoryDexFile(ByteBuffer buf)
-        throws IOException {
-    if (buf == null) {
-        throw new NullPointerException("buf == null");
-    }
+private static Object openInMemoryDexFile(ByteBuffer buf) throws IOException {
+    int start = buf.position();
+    int size = buf.remaining();
     if (buf.isDirect()) {
-        return createCookieWithDirectBuffer(
-                buf,
-                buf.position(),
-                buf.limit());
-    } else {
-        return createCookieWithArray(
-                buf.array(),
-                buf.position(),
-                buf.limit());
+        return createCookieWithDirectBuffer(buf, start, size);
     }
-}
+    if (buf.hasArray()) {
+        return createCookieWithArray(buf.array(), buf.arrayOffset() + start, size);
+    }
+    byte[] tmp = new byte[size];
+    ByteBuffer dup = buf.duplicate();
+    dup.get(tmp);
+    return createCookieWithArray(tmp, 0, size);
+    }                                    
 
 public Class<?> loadClass(String name, ClassLoader loader) {
     return loadClassBinaryName(name, loader, null);
