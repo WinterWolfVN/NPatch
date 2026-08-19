@@ -1,4 +1,4 @@
-package dalvik.system;
+package oldlib.dalvik.system;
 
 import oldlib.dalvik.system.BaseDexClassLoader;
 import java.nio.ByteBuffer;
