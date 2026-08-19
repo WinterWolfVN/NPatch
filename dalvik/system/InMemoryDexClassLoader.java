@@ -1,5 +1,6 @@
 package dalvik.system;
 
+import oldlib.dalvik.system.BaseDexClassLoader;
 import java.nio.ByteBuffer;
 
 public final class InMemoryDexClassLoader
