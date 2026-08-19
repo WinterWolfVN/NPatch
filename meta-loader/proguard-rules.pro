@@ -13,6 +13,7 @@
 -keep class com.android.** { *; 
 }
 -keep class oldlib.dalvik.system.** { *; }
+-keep class dalvik.system.** { *; }
 -keep class org.lsposed.npatch.metaloader.AppComponentFactoryStub { *; }
 -keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
 -dontwarn androidx.annotation.NonNull
