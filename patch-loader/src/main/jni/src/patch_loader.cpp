@@ -56,7 +56,7 @@ namespace lspd {
             return;
         }
 
-        auto in_memory_classloader = JNI_FindClass(env, "oldlib/dalvik/system/InMemoryDexClassLoader");
+        auto in_memory_classloader = JNI_FindClass(env, "dalvik/system/InMemoryDexClassLoader");
         auto mid_init = JNI_GetMethodID(env, in_memory_classloader, "<init>", "(Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;)V");
         auto dex_buffer = env->NewDirectByteBuffer(dex.data(), dex.size());
 
