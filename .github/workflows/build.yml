@@ -68,9 +68,9 @@ jobs:
       run: |
        API_LEVEL=26
        if [ "$API_LEVEL" -ge 26 ]; then
-         find core pacth-loader -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.c" -o -name "*.hpp" \) -exec sed -i 's/oldlib.dalvik.system.InMemoryClassLoader/dalvik.system.InMemoryDexClassLoader/g' {} +
+         find core patch-loader -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.c" -o -name "*.hpp" \) -exec sed -i 's/oldlib.dalvik.system.InMemoryClassLoader/dalvik.system.InMemoryDexClassLoader/g' {} +
        else
-         find core pacth-loader -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.c" -o -name "*.hpp" \) -exec sed -i 's/dalvik.system.InMemoryDexClassLoader/oldlib.dalvik.system.InMemoryClassLoader/g' {} +
+         find core patch-loader -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.c" -o -name "*.hpp" \) -exec sed -i 's/dalvik.system.InMemoryDexClassLoader/oldlib.dalvik.system.InMemoryClassLoader/g' {} +
        fi
     
     - name: 設定快取
