@@ -135,7 +135,7 @@ static jobject openBytes(JNIEnv* env, const uint8_t* source, size_t size) {
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_dalvik_system_DexFile_createCookieWithDirectBuffer(JNIEnv* env, jclass, jobject buffer, jint start, jint end) {
+Java_oldlib_dalvik_system_DexFile_createCookieWithDirectBuffer(JNIEnv* env, jclass, jobject buffer, jint start, jint end) {
     uint8_t* address = static_cast<uint8_t*>(env->GetDirectBufferAddress(buffer));
     jlong capacity = env->GetDirectBufferCapacity(buffer);
     if (address == nullptr || capacity < 0) {
@@ -151,7 +151,7 @@ Java_dalvik_system_DexFile_createCookieWithDirectBuffer(JNIEnv* env, jclass, job
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_dalvik_system_DexFile_createCookieWithArray(JNIEnv* env, jclass, jbyteArray array, jint start, jint end) {
+Java_oldlib_dalvik_system_DexFile_createCookieWithArray(JNIEnv* env, jclass, jbyteArray array, jint start, jint end) {
     if (array == nullptr) {
         throwIOException(env, "byte array == null");
         return nullptr;
