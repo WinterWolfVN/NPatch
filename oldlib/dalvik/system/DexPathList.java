@@ -29,10 +29,10 @@ public final class DexPathList {
     
     DexPathList(ClassLoader definingContext, ByteBuffer[] dexFiles) {
         this.definingContext = definingContext;
-        this.nativeLibraryDirectories = new File[0];
-        this.systemNativeLibraryDirectories = new File[0];
-        this.nativeLibraryPathElements = new NativeLibraryElement[0];
-        this.dexElements = makeInMemoryDexElements(dexFiles);
+        // this.nativeLibraryDirectories = new File[0];
+        // this.systemNativeLibraryDirectories = new File[0];
+        // this.nativeLibraryPathElements = new NativeLibraryElement[0];
+        this.dexElements = makeInMemoryDexElement(dexFiles);
     }
 
     private static Element[] makeInMemoryDexElement(ByteBuffer[] dexFiles) {
