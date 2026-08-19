@@ -1,9 +1,13 @@
 package oldlib.dalvik.system;
 
-import dalvik.system.DexFile;
 import java.nio.ByteBuffer;
+import java.io.IOException;
 
 public final class DexFile {
+  private Object mCookie;
+  private Object mInternalCookie;
+  private String mFileName;
+    
 DexFile(ByteBuffer buf) throws IOException {
     if (buf == null) {
         throw new NullPointerException("buf == null");
