@@ -60,4 +60,3 @@ private static native Object createCookieWithArray(byte[] buf, int start, int en
 private static native Object openDexFile(String path, String optimizedDirectory, int flags) throws IOException;
 private static native Class<?> defineClass(String name, ClassLoader loader, Object cookie, DexFile dexFile, List<Throwable> suppressed);
 }
-} 
