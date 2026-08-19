@@ -1,6 +1,7 @@
 package oldlib.dalvik.system;
 
 import oldlib.dalvik.system.DexFile;
+import dalvik.system.DexFile;
 
 import java.io.File;
 import java.io.FileOutputStream;
