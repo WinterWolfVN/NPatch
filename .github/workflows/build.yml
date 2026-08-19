@@ -63,16 +63,7 @@ jobs:
             echo -e "package sunp.net.www.protocol.jar;\nimport java.net.URLStreamHandler;\npublic class Handler extends URLStreamHandler { protected java.net.URLConnection openConnection(java.net.URL u) throws java.io.IOException { return null; } }" > "$STUB_DIR/Handler.java"
             echo "Successfully patched"
           fi
-
-    - name: My Patch
-      run: |
-         grep -rl 'dalvik/system/InMemoryDexClassLoader' core/ \
-           --exclude='*.dex' \
-           --exclude='*.apk' \
-           --exclude='*.so' \
-           | xargs -r sed -i \
-           's#dalvik/system/InMemoryDexClassLoader#oldlib/dalvik/system/InMemoryDexClassLoader#g'
-        
+   
     - name: 設定快取
       uses: actions/cache@v4
       with:
