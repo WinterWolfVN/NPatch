@@ -31,6 +31,7 @@
 #include "native_util.h"
 #include "symbol_cache.h"
 #include "utils/jni_helper.hpp"
+#include <android/api-level.h>   
 
 using namespace lsplant;
 
