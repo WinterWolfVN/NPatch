@@ -57,8 +57,8 @@ fun SettingsScreen() {
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = 16.dp)
         ) {
-            KeyStore()
             Language()
+            KeyStore()            
             DetailPatchLogs()
             StorageDirectory()
         }
@@ -66,6 +66,116 @@ fun SettingsScreen() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun Language() {
+    val systemDefault = stringResource(R.string.settings_language_system)
+    val languages = remember(systemDefault) {
+        linkedMapOf(
+            "" to systemDefault,
+            "af" to "Afrikaans",
+            "ar" to "العربية",
+            "bg" to "Български",
+            "bn" to "বাংলা",
+            "ca" to "Català",
+            "cs" to "Čeština",
+            "da" to "Dansk",
+            "de" to "Deutsch",
+            "el" to "Ελληνικά",
+            "en" to "English",
+            "es" to "Español",
+            "et" to "Eesti",
+            "fa" to "فارسی",
+            "fi" to "Suomi",
+            "fr" to "Français",
+            "hi" to "हिन्दी",
+            "hr" to "Hrvatski",
+            "hu" to "Magyar",
+            "in" to "Bahasa Indonesia",
+            "it" to "Italiano",
+            "iw" to "עברית",
+            "ja" to "日本語",
+            "ko" to "한국어",
+            "ku" to "Kurdî",
+            "lt" to "Lietuvių",
+            "nl" to "Nederlands",
+            "no" to "Norsk",
+            "pl" to "Polski",
+            "pt" to "Português",
+            "pt-BR" to "Português (Brasil)",
+            "ro" to "Română",
+            "ru" to "Русский",
+            "si" to "සිංහල",
+            "sk" to "Slovenčina",
+            "sv" to "Svenska",
+            "th" to "ภาษาไทย",
+            "tr" to "Türkçe",
+            "uk" to "Українська",
+            "ur" to "اردو",
+            "vi" to "Tiếng Việt",
+            "zh-CN" to "简体中文",
+            "zh-HK" to "中文 (香港)",
+            "zh-TW" to "繁體中文",
+        )
+    }
+
+    val context = LocalContext.current
+    var expanded by remember { mutableStateOf(false) }
+   
+    val currentLocale = remember {
+        AppCompatDelegate.getApplicationLocales().takeIf { it.isEmpty.not() }?.let { locales ->
+            locales[0]?.toLanguageTag()
+        } ?: Locale.getDefault().toLanguageTag()
+     }
+
+    val currentTag = remember(currentLocale) {
+        when {
+            currentLocale == null -> ""
+            currentLocale == "und" -> ""
+            currentLocale.startsWith("zh") && (currentLocale.contains("CN") || currentLocale.contains("Hans")) -> "zh-CN"
+            currentLocale.startsWith("zh") && currentLocale.contains("TW") -> "zh-TW"
+            currentLocale.startsWith("zh") && currentLocale.contains("HK") -> "zh-HK"
+            currentLocale.startsWith("pt") && currentLocale.contains("BR") -> "pt-BR"
+            else -> languages.keys.firstOrNull { currentLocale.startsWith(it) } ?: ""
+        }
+    }
+
+    val currentLabel = remember(currentTag, systemDefault) {
+        languages[currentTag] ?: systemDefault    
+    }
+    
+    Box {
+        SettingsItem(
+            icon = Icons.Outlined.Language,
+            title = stringResource(R.string.settings_language),
+            desc = currentLabel,
+            modifier = Modifier.clickable { expanded = true }
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.heightIn(max = 320.dp),
+            offset = DpOffset(x = 200.dp, y = 0.dp)
+        )   {
+            languages.forEach { (tag, name) ->
+                DropdownMenuItem(
+                    text = { Text(name) },
+                    onClick = {
+                        val localeList = if (tag.isEmpty()) {
+                            LocaleListCompat.getEmptyLocaleList()
+                        } else {
+                            LocaleListCompat.forLanguageTags(tag)
+                        }
+                        AppCompatDelegate.setApplicationLocales(localeList)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+
+
 @Composable
 private fun KeyStore() {
     val context = LocalContext.current
@@ -254,96 +364,7 @@ private fun KeyStore() {
         )
     }
 }
-
-@Composable
-private fun Language() {
-    val systemDefault = stringResource(R.string.settings_language_system)
-    val languages = remember(systemDefault) {
-        linkedMapOf(
-            "" to systemDefault,
-            "af" to "Afrikaans",
-            "ar" to "العربية",
-            "bg" to "Български",
-            "bn" to "বাংলা",
-            "ca" to "Català",
-            "cs" to "Čeština",
-            "da" to "Dansk",
-            "de" to "Deutsch",
-            "el" to "Ελληνικά",
-            "en" to "English",
-            "es" to "Español",
-            "et" to "Eesti",
-            "fa" to "فارسی",
-            "fi" to "Suomi",
-            "fr" to "Français",
-            "hi" to "हिन्दी",
-            "hr" to "Hrvatski",
-            "hu" to "Magyar",
-            "in" to "Bahasa Indonesia",
-            "it" to "Italiano",
-            "iw" to "עברית",
-            "ja" to "日本語",
-            "ko" to "한국어",
-            "ku" to "Kurdî",
-            "lt" to "Lietuvių",
-            "nl" to "Nederlands",
-            "no" to "Norsk",
-            "pl" to "Polski",
-            "pt" to "Português",
-            "pt-BR" to "Português (Brasil)",
-            "ro" to "Română",
-            "ru" to "Русский",
-            "si" to "සිංහල",
-            "sk" to "Slovenčina",
-            "sv" to "Svenska",
-            "th" to "ภาษาไทย",
-            "tr" to "Türkçe",
-            "uk" to "Українська",
-            "ur" to "اردو",
-            "vi" to "Tiếng Việt",
-            "zh-CN" to "简体中文",
-            "zh-HK" to "中文 (香港)",
-            "zh-TW" to "繁體中文",
-        )
-    }
     
-    val context = LocalContext.current
-    var expanded by remember { mutableStateOf(false) }
-    val currentTag = remember { AppCompatDelegate.getApplicationLocales().toLanguageTags().takeIf { it.isNotEmpty() && it != "und" }?: systemDefault }
-    val currentLabel = remember(currentTag, systemDefault) {
-        languages.entries.firstOrNull { (tag, _) -> tag.isNotEmpty() && currentTag.startsWith(tag)}?.value ?: systemDefault }
-
-    Box {
-        SettingsItem(
-            icon = Icons.Outlined.Language,
-            title = stringResource(R.string.settings_language),
-            desc = currentLabel,
-            modifier = Modifier.clickable { expanded = true }
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.heightIn(max = 320.dp),
-            offset = DpOffset(x = 200.dp, y = 0.dp)
-        ) {
-            languages.forEach { (tag, name) ->
-                DropdownMenuItem(
-                    text = { Text(name) },
-                    onClick = {
-                        val localeList = if (tag.isEmpty()) {
-                            LocaleListCompat.getEmptyLocaleList()
-                        } else {
-                            LocaleListCompat.forLanguageTags(tag)
-                        }
-                        AppCompatDelegate.setApplicationLocales(localeList)
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-}
-
 @Composable
 private fun DetailPatchLogs() {
     SettingsSwitch(
