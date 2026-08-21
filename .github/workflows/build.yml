@@ -69,38 +69,20 @@ jobs:
         python3 - <<'PY'
         from pathlib import Path
 
-        files = [
-            "native/src/jni/resources_hook.cpp",
-            "zygisk/src/main/cpp/module.cpp",
-        ]
-
-        for f in files:
-            p = Path(f)
-            s = p.read_text()
-
-        inc = '#include <android/api-level.h>\n'
-        if inc not in s:            
-            lines = s.splitlines(True)
-            inserted = False
-            out = []
-            for line in lines:
-                out.append(line)
-                if not inserted and line.startswith('#include '):
-                    out.append(inc)
-                    inserted = True
-            if not inserted:
-                out = [inc] + lines
-            s = ''.join(out)
-
-        s = s.replace(
-            'auto in_memory_cl_class = lsplant::JNI_FindClass(env, "dalvik/system/InMemoryDexClassLoader");',
+        for p in Path("core").rglob("*.cpp"):
+        s = p.read_text()
+        old = 'auto in_memory_cl_class = lsplant::JNI_FindClass(env, "dalvik/system/InMemoryDexClassLoader");'
+        new = (
             'auto in_memory_cl_class = (android_get_device_api_level() >= 26)\n'
             '    ? lsplant::JNI_FindClass(env, "dalvik/system/InMemoryDexClassLoader")\n'
             '    : lsplant::JNI_FindClass(env, "oldlib/dalvik/system/InMemoryDexClassLoader");'
         )
 
-        s = s.replace(
-            'static auto in_memory_classloader =\n        lsplant::JNI_NewGlobalRef(env, lsplant::JNI_FindClass(env, "dalvik/system/InMemoryDexClassLoader"));',
+        old2 = (
+            'static auto in_memory_classloader =\n'
+            '        lsplant::JNI_NewGlobalRef(env, lsplant::JNI_FindClass(env, "dalvik/system/InMemoryDexClassLoader"));'
+        )
+        new2 = (
             'static auto in_memory_classloader =\n'
             '        lsplant::JNI_NewGlobalRef(env,\n'
             '            (android_get_device_api_level() >= 26)\n'
@@ -108,10 +90,35 @@ jobs:
             '                : lsplant::JNI_FindClass(env, "oldlib/dalvik/system/InMemoryDexClassLoader"));'
         )
 
-        p.write_text(s)
+        changed = False
+
+        if old in s:
+            s = s.replace(old, new)
+            changed = True
+
+        if old2 in s:
+            s = s.replace(old2, new2)
+            changed = True
+
+        if changed and '#include <android/api-level.h>' not in s:
+            lines = s.splitlines(True)
+            out = []
+            inserted = False
+            for line in lines:
+                out.append(line)
+                if not inserted and line.startswith('#include '):
+                    out.append('#include <android/api-level.h>\n')
+                    inserted = True
+            if not inserted:
+                out = ['#include <android/api-level.h>\n'] + lines
+            s = ''.join(out)
+
+        if changed:
+            p.write_text(s)
+            print("patched:", p)
         PY
     
-    
+        
     - name: 設定快取
       uses: actions/cache@v4
       with:
