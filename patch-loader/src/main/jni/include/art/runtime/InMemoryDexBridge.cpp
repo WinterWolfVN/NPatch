@@ -86,7 +86,7 @@ static const void* openMemory(const uint8_t* base, size_t size, const char* loca
     //
     // The mapping is kept separately by this bridge so the bytes remain
     // alive for the lifetime of the DexFile.
-    DexFile* dexFile = fn(base, size, std::string(location ? location : ""), 0, nullptr, nullptr, &error);
+    const void* dexFile = fn(base, size, std::string(location ? location : ""), 0, nullptr, nullptr, &error);
     if (dexFile == nullptr) {
         LOGE("DexFile::OpenMemory failed: %s", error.c_str());
     }    
