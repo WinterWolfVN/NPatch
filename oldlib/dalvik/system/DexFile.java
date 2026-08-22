@@ -10,11 +10,6 @@ public final class DexFile {
   private Object mInternalCookie;
   private String mFileName;
 
-static {
-    initInMemoryDexBridge(DexFile.class.getClassLoader());
-}
-private static native void initInMemoryDexBridge(ClassLoader loader);
-    
 public DexFile(ByteBuffer buf) throws IOException {
     if (buf == null) {
         throw new NullPointerException("buf == null");
