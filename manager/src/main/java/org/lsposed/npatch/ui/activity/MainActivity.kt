@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -26,6 +27,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import com.ramcosta.composedestinations.DestinationsNavHost
+import java.util.Locale
 import org.lsposed.npatch.ui.page.BottomBarDestination
 import org.lsposed.npatch.ui.page.NavGraphs
 import org.lsposed.npatch.ui.page.appCurrentDestinationAsState
