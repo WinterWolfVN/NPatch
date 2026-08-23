@@ -43,6 +43,8 @@ import java.util.Locale
 import java.security.GeneralSecurityException
 import java.security.KeyStore
 import android.preference.PreferenceManager
+import android.content.Context
+import android.content.res.Configuration
 
 private const val TAG = "SettingsScreen"
 
