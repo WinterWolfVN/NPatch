@@ -37,10 +37,24 @@ class MainActivity : AppCompatActivity() {
 
     @OptIn(ExperimentalAnimationApi::class)
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(newBase)
-        AppCompatDelegate.setApplicationLocales(
-            AppCompatDelegate.getApplicationLocales()
-        )
+         val prefs = PreferenceManager.getDefaultSharedPreferences(newBase)
+         val languageCode = prefs.getString("app_language", "") ?: ""
+         val context = if (languageCode.isNotEmpty()) {
+             updateBaseContextLocale(newBase, languageCode)
+         } else {
+             newBase
+         }
+         super.attachBaseContext(context)
+    }
+
+    private fun updateBaseContextLocale(context: Context, languageCode: String): Context {
+         val locale = Locale(languageCode)
+         Locale.setDefault(locale)
+         val resources = context.resources
+         val configuration = Configuration(resources.configuration)
+         configuration.setLocale(locale)
+         configuration.setLayoutDirection(locale)
+         return context.createConfigurationContext(configuration)
     }
 
     @OptIn(ExperimentalAnimationApi::class)
