@@ -163,8 +163,7 @@ private fun Language() {
             languages.forEach { (tag, name) ->
                 DropdownMenuItem(
                     text = { Text(name) },
-                    onClick = {
-                        val context = LocalContext.current
+                    onClick = {                        
                         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
                         prefs.edit().putString("app_language", if (tag.isEmpty()) null else tag).apply()
                         context.setAppLanguage(if (tag.isEmpty()) null else tag)
