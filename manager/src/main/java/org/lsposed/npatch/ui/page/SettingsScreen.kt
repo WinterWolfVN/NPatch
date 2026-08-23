@@ -42,6 +42,7 @@ import java.io.IOException
 import java.util.Locale
 import java.security.GeneralSecurityException
 import java.security.KeyStore
+import android.preference.PreferenceManager
 
 private const val TAG = "SettingsScreen"
 
@@ -161,6 +162,10 @@ private fun Language() {
                 DropdownMenuItem(
                     text = { Text(name) },
                     onClick = {
+                        val context = LocalContext.current
+                        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+                        prefs.edit().putString("app_language", if (tag.isEmpty()) null else tag).apply()
+                        context.setAppLanguage(if (tag.isEmpty()) null else tag)
                         val localeList = if (tag.isEmpty()) {
                             LocaleListCompat.getEmptyLocaleList()
                         } else {
@@ -175,6 +180,15 @@ private fun Language() {
     }
 }
 
+fun Context.setAppLanguage(languageCode: String?) {
+    val locale = languageCode?.let { Locale(it) } ?: Locale.getDefault()
+    Locale.setDefault(locale)
+    val resources = resources
+    val configuration = Configuration(resources.configuration)
+    configuration.setLocale(locale)
+    configuration.setLayoutDirection(locale)
+    resources.updateConfiguration(configuration, resources.displayMetrics)
+}
 
 
 @Composable
