@@ -28,7 +28,7 @@ std::unordered_map<uintptr_t, DexMemory> gMemory;
 static const char* kOpenMemoryArm64 = "_ZN3art7DexFile10OpenMemoryEPKhmRKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEjPNS_6MemMapEPKNS_10OatDexFileEPS9";
 
 // Raw ABI declaration used by this bridge.
-using OpenMemoryArm64 = const void* (*)(const uint8_t*, size_t, const std::string&, uint32_t, void*, const void*, std::string*);
+using OpenMemoryArm64 = const void* (*)(const uint8_t*, size_t, const std::string&, uint32_t, void*, std::string*);
 static void throwIOException(JNIEnv* env, const char* msg) {
     jclass cls = env->FindClass("java/io/IOException");
     if (cls != nullptr) {
@@ -58,23 +58,34 @@ static jobject makeCookie(JNIEnv* env, const void* dexFile) {
 }
 
 static const void* openMemory(const uint8_t* base, size_t size, const char* location) {
+    LOGE("OpenMemory: base=%p size=%zu location=%s", base, size, location ? location : "");
     void* libart = dlopen("libart.so", RTLD_NOW);
     if (libart == nullptr) {
-        LOGE("dlopen(libart.so): %s", dlerror());
+        LOGE("dlopen libart.so failed: %s", dlerror());
         return nullptr;
     }
     void* symbol = dlsym(libart, kOpenMemoryArm64);
     if (symbol == nullptr) {
-        LOGE("DexFile::OpenMemory symbol not found: %s", dlerror());
+        LOGE("OpenMemory symbol not found: %s", dlerror());
         dlclose(libart);
         return nullptr;
     }
-
+    LOGE("OpenMemory symbol=%p", symbol);
     OpenMemoryArm64 fn = reinterpret_cast<OpenMemoryArm64>(symbol);
     std::string error;
-    const void* dexFile = fn(base, size, std::string(location ? location : ""), 0, nullptr, nullptr, &error);
+    const void* dexFile = fn(
+        base,
+        size,
+        std::string(location ? location : ""),
+        0,
+        nullptr,
+        &error
+    );
+
     if (dexFile == nullptr) {
         LOGE("DexFile::OpenMemory failed: %s", error.c_str());
+    } else {
+        LOGE("DexFile::OpenMemory success: DexFile=%p", dexFile);
     }
     dlclose(libart);
     return dexFile;
