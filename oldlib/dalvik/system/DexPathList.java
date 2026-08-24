@@ -28,26 +28,23 @@ public final class DexPathList {
     }
     
     DexPathList(ClassLoader definingContext, ByteBuffer[] dexFiles) {
-        this.definingContext = definingContext;
-        // this.nativeLibraryDirectories = new File[0];
-        // this.systemNativeLibraryDirectories = new File[0];
-        // this.nativeLibraryPathElements = new NativeLibraryElement[0];
+        this.definingContext = definingContext;        
         this.dexElements = makeInMemoryDexElement(dexFiles);
     }
 
-    private static Element[] makeInMemoryDexElement(ByteBuffer[] dexFiles) {
+    private static Element[] makeInMemoryDexElement(
+        ByteBuffer[] dexFiles) {
         Element[] elements = new Element[dexFiles.length];
-     for (int i = 0; i < dexFiles.length; i++) {
-         try {
-             DexFile dex = new DexFile(dexFiles[i]);
-             elements[i] = new Element(dex);
-         } catch (IOException e) {
-             throw new RuntimeException(
-                    "Unable to load dex file from memory", e);
-         }
-     }
-     return elements;
-}
+        for (int i = 0; i < dexFiles.length; i++) {
+            try {
+                oldlib.dalvik.system.DexFile dex = new oldlib.dalvik.system.DexFile(dexFiles[i]);
+                elements[i] = new Element(dex);
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to load dex file from memory", e);
+            }
+        }
+        return elements;
+    }
 
     private Element[] makeDexElements(String dexPath, File optimizedDirectory) {
         ArrayList<Element> result = new ArrayList<Element>();
@@ -58,9 +55,9 @@ public final class DexPathList {
         for (String path : paths) {
             if (path.length() == 0) {
                 continue;
-            }
-            try {
-                DexFile dex = DexFile.loadDex(path, optimizedDirectory == null ? null : optimizedDirectory.getAbsolutePath(), 0);
+        }
+        try {
+            dalvik.system.DexFile dex = dalvik.system.DexFile.loadDex(path, optimizedDirectory == null ? null : optimizedDirectory.getAbsolutePath(), 0);
                 if (dex != null) {
                     result.add(new Element(dex));
                 }
@@ -81,10 +78,17 @@ public final class DexPathList {
      *
      * Do not use loadClassBinaryName().
      */
-    Class<?> findClass(String name, List<Throwable> suppressed) {
+    Class<?> findClass(
+        String name,
+        List<Throwable> suppressed) {
         for (Element element : dexElements) {
             try {
-                Class<?> clazz = element.dexFile.loadClass(name, definingContext);
+                Class<?> clazz;
+                if (element.nativeDexFile != null) {
+                    clazz = element.nativeDexFile.loadClass(name, definingContext);
+                } else {
+                clazz = element.memoryDexFile.loadClass(name, definingContext);
+                }
                 if (clazz != null) {
                     return clazz;
                 }
@@ -131,13 +135,23 @@ public final class DexPathList {
     }
 
     public static final class Element {
-        final DexFile dexFile;
-        Element(DexFile dexFile) {
-            this.dexFile = dexFile;
-        }
-    
+        final dalvik.system.DexFile nativeDexFile;
+        final oldlib.dalvik.system.DexFile memoryDexFile;
+        Element(dalvik.system.DexFile dexFile) {
+            this.nativeDexFile = dexFile;
+            this.memoryDexFile = null;
+    }
+        Element(oldlib.dalvik.system.DexFile dexFile) {
+            this.nativeDexFile = null;
+            this.memoryDexFile = dexFile;
+    }
+        
+        @Override
         public String toString() {
-            return String.valueOf(dexFile);
-        }    
+            if (nativeDexFile != null) {
+                return String.valueOf(nativeDexFile);
+            }
+            return String.valueOf(memoryDexFile);
+        }
     }
 }
