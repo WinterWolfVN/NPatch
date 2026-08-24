@@ -177,3 +177,18 @@ Java_oldlib_dalvik_system_DexFile_createCookieWithArray(JNIEnv* env, jclass, jby
     }
     return openBytes(env, temp.data(), size);
 }
+
+static JNINativeMethod gMethods[] = {
+    {
+        "createCookieWithDirectBuffer",
+        "(Ljava/nio/ByteBuffer;II)Ljava/lang/Object;",
+        reinterpret_cast<void*>(
+            Java_oldlib_dalvik_system_DexFile_createCookieWithDirectBuffer)
+    },
+    {
+        "createCookieWithArray",
+        "([BII)Ljava/lang/Object;",
+        reinterpret_cast<void*>(
+            Java_oldlib_dalvik_system_DexFile_createCookieWithArray)
+    }
+};
