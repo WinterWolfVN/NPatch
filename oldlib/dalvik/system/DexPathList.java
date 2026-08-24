@@ -83,12 +83,8 @@ public final class DexPathList {
         List<Throwable> suppressed) {
         for (Element element : dexElements) {
             try {
-                Class<?> clazz;
-                if (element.nativeDexFile != null) {
-                    clazz = element.nativeDexFile.loadClass(name, definingContext);
-                } else {
-                clazz = element.memoryDexFile.loadClass(name, definingContext);
-                }
+                Class<?> clazz;                
+                    clazz = element.nativeDexFile.loadClass(name, definingContext);               
                 if (clazz != null) {
                     return clazz;
                 }
