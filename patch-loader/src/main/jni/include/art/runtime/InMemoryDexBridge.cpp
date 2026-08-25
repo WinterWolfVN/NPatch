@@ -132,7 +132,7 @@ jobject CreateCookieWithDirectBuffer(JNIEnv* env, jclass, jobject buffer, jint s
         return nullptr;
     }
     return OpenMemory(env, static_cast<const uint8_t*>(address) + start, static_cast<size_t>(end - start));
-} // namespace
+} 
 
 const JNINativeMethod gMethods[] = {
         {
@@ -142,6 +142,8 @@ const JNINativeMethod gMethods[] = {
         "createCookieWithDirectBuffer", "(Ljava/nio/ByteBuffer;II)Ljava/lang/Object;", reinterpret_cast<void*>(CreateCookieWithDirectBuffer)
         }
 };
+
+} // namespace
 
 bool RegisterInMemoryDexBridge(JNIEnv* env) {
     if (env == nullptr) {
