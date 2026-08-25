@@ -1,61 +1,68 @@
 package oldlib.dalvik.system;
 
-import java.nio.ByteBuffer;
 import java.io.IOException;
-import java.io.FileNotFoundException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 public final class DexFile {
-  private Object mCookie;
-  private Object mInternalCookie;
-  private String mFileName;
+    private static final Method DEFINE_CLASS;
 
-public DexFile(ByteBuffer buf) throws IOException {
-    if (buf == null) {
-        throw new NullPointerException("buf == null");
+    static {
+        try {
+            DEFINE_CLASS = dalvik.system.DexFile.class.getDeclaredMethod("defineClass", String.class, ClassLoader.class, Object.class, dalvik.system.DexFile.class);
+            DEFINE_CLASS.setAccessible(true);
+        } catch (Throwable e) {
+            throw new ExceptionInInitializerError(e);
+        }
     }
-    mCookie = openInMemoryDexFile(buf);
-    mInternalCookie = mCookie;
-    mFileName = null;
-}
 
-public DexFile(byte[] bytes) throws IOException {
-    if (bytes == null) {
-        throw new NullPointerException("bytes == null");
-    }
-    mCookie = createCookieWithArray(bytes, 0, bytes.length);
-    if (mCookie == null) {
-        throw new IOException("Unable to load dex from byte array");
-    }
-    mInternalCookie = mCookie;
-    mFileName = null;
-}
+    private final Object mCookie;
 
-private DexFile(Object cookie) {
-    this.mCookie = cookie;
-    this.mInternalCookie = cookie;
-    this.mFileName = null;
-}
-  
-private static Object openInMemoryDexFile(ByteBuffer buf) throws IOException {
-    int start = buf.position();
-    int size = buf.remaining();
-    int end = start + size;
-    if (buf.isDirect()) {
-        return createCookieWithDirectBuffer(buf, start, end);
+    private DexFile(Object cookie) {
+        if (cookie == null) {
+            throw new NullPointerException("cookie == null");
+        }
+        mCookie = cookie;
     }
-    if (buf.hasArray()) {
-        int arrayStart = buf.arrayOffset() + start;
-        int arrayEnd = arrayStart + size;
-        return createCookieWithArray(buf.array(), arrayStart, arrayEnd);
+
+    public DexFile(ByteBuffer buffer)
+            throws IOException {
+        if (buffer == null) {
+            throw new NullPointerException("buffer == null");
+        }
+        Object cookie;
+        int start = buffer.position();
+        int end = buffer.limit();
+        if (buffer.isDirect()) {
+            cookie = createCookieWithDirectBuffer(buffer, start, end);
+        } else if (buffer.hasArray()) {
+            int arrayStart = buffer.arrayOffset() + start;
+            int arrayEnd = arrayStart + end - start;
+            cookie = createCookieWithArray(buffer.array(), arrayStart, arrayEnd);
+        } else {
+            ByteBuffer duplicate = buffer.duplicate();
+            byte[] data = new byte[duplicate.remaining()];
+            duplicate.get(data);
+            cookie = createCookieWithArray(data, 0, data.length);
+        }
+        if (cookie == null) {
+            throw new IOException("Unable to load dex from memory");
+        }
+        mCookie = cookie;
     }
-    byte[] tmp = new byte[size];
-    ByteBuffer dup = buf.duplicate();
-    dup.get(tmp);
-    return createCookieWithArray(tmp, 0, size);
-}                                         
- 
-private static native Object createCookieWithDirectBuffer(ByteBuffer buf, int start, int end) throws IOException;
-private static native Object createCookieWithArray(byte[] buf, int start, int end) throws IOException;
+
+    public Class<?> loadClass(String name, ClassLoader loader) {
+        try {
+            return (Class<?>) DEFINE_CLASS.invoke(null, name, loader, mCookie, null);
+        } catch (InvocationTargetException e) {
+            return null;
+        } catch (IllegalAccessException e) {
+            return null;
+        }
+    }
+
+    private static native Object createCookieWithArray(byte[] buffer, int start, int end) throws IOException;
+    private static native Object createCookieWithDirectBuffer(ByteBuffer buffer, int start, int end) throws IOException;
 }
-      
