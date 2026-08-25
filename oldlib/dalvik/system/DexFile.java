@@ -19,6 +19,18 @@ public DexFile(ByteBuffer buf) throws IOException {
     mFileName = null;
 }
 
+public DexFile(byte[] bytes) throws IOException {
+    if (bytes == null) {
+        throw new NullPointerException("bytes == null");
+    }
+    mCookie = createCookieWithArray(bytes, 0, bytes.length);
+    if (mCookie == null) {
+        throw new IOException("Unable to load dex from byte array");
+    }
+    mInternalCookie = mCookie;
+    mFileName = null;
+}
+
 private DexFile(Object cookie) {
     this.mCookie = cookie;
     this.mInternalCookie = cookie;
