@@ -7,6 +7,7 @@
 #include <vector>
 #include <mutex>
 #include <unordered_map>
+#include <android/api-level.h>
 
 namespace {
 
@@ -153,23 +154,19 @@ const JNINativeMethod gMethods[] = {
         }
 };
 
-}
+} // namespace 
 
-extern "C"
-JNIEXPORT jint JNICALL
-JNI_OnLoad(JavaVM* vm, void*) {
-    JNIEnv* env = nullptr;
-    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6
-    ) != JNI_OK) {
-        return JNI_ERR;
+bool RegisterInMemoryDexBridge(JNIEnv* env) {
+    if (env == nullptr) {
+        return false;
     }
-
+    if (android_get_device_api_level() > 26) {
+        return true;
+    }
     jclass clazz = env->FindClass("oldlib/dalvik/system/DexFile");
     if (clazz == nullptr) {
-        return JNI_ERR;
+        return false;
     }
-    if (env->RegisterNatives(clazz, gMethods, sizeof(gMethods) / sizeof(gMethods[0])) != JNI_OK) {
-        return JNI_ERR;
-    }
-    return JNI_VERSION_1_6;
+    return env->RegisterNatives(clazz, gMethods, sizeof(gMethods) / sizeof(gMethods[0])) == JNI_OK;
 }
+
