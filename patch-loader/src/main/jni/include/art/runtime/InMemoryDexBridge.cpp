@@ -147,10 +147,10 @@ const JNINativeMethod gMethods[] = {
         },
         {
         "createCookieWithDirectBuffer", "(Ljava/nio/ByteBuffer;II)Ljava/lang/Object;", reinterpret_cast<void*>(CreateCookieWithDirectBuffer)
-        }
+        },
         {
         "createDexFileObject", "(Ljava/lang/Object;)Ldalvik/system/DexFile;", reinterpret_cast<void*>(CreateDexFileObject)
-        },
+        }
 };
 
 }
