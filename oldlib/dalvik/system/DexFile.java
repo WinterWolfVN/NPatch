@@ -51,13 +51,11 @@ public final class DexFile {
         if (cookie == null) {
             throw new IOException("Unable to load dex from memory");
         }
-        mCookie = cookie;
-        try {
-            sun.misc.Unsafe unsafe = sun.misc.Unsafe.getUnsafe();
-            mDexFile = (dalvik.system.DexFile)unsafe.allocateInstance(dalvik.system.DexFile.class);
-        } catch (Throwable e) {
-            throw new IOException("Unable to create DexFile object", e);
+        mDexFile = createDexFileObject(cookie);
+        if (mDexFile == null) {
+            throw new IOException("Unable to create DexFile object");
         }
+        mCookie = cookie;
     }
 
     public Class<?> loadClass(String name, ClassLoader loader) {
@@ -72,4 +70,5 @@ public final class DexFile {
 
     private static native Object createCookieWithArray(byte[] buffer, int start, int end) throws IOException;
     private static native Object createCookieWithDirectBuffer(ByteBuffer buffer, int start, int end) throws IOException;
+    private static native dalvik.system.DexFile createDexFileObject(Object cookie);
 }
