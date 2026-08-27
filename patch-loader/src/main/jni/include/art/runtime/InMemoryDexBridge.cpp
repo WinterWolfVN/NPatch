@@ -36,11 +36,22 @@ OpenMemoryFn GetOpenMemory() {
 }
 
 jobject CreateDexFileObject(JNIEnv* env, jclass, jobject cookie) {
+    if (cookie == nullptr) {
+        jclass npe = env->FindClass("java/lang/NullPointerException");
+        if (npe != nullptr) {
+            env->ThrowNew(npe, "cookie == null");
+        }
+        return nullptr;
+    }
     jclass dexFileClass = env->FindClass("dalvik/system/DexFile");
     if (dexFileClass == nullptr) {
         return nullptr;
     }
-    return env->AllocObject(dexFileClass);
+    jobject dexFile = env->AllocObject(dexFileClass);
+    if (dexFile == nullptr) {
+        return nullptr;
+    }
+    return dexFile;
 }
 
 jobject CreateCookie(JNIEnv* env, const DexFile* dexFile) {
