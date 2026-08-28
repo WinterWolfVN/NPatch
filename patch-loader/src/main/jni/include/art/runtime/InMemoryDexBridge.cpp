@@ -15,6 +15,7 @@ struct DexFile {};
 struct MemMap {};
 struct OatDexFile {};
 
+static jfieldID gDexFileCookieField = nullptr;
 typedef std::unique_ptr<const DexFile> (*OpenMemoryFn)(const uint8_t*, size_t, const std::string&, uint32_t, MemMap*, const OatDexFile*, std::string*);
 std::mutex gMutex;
 std::unordered_map<const DexFile*, std::vector<uint8_t>> gBuffers;
@@ -47,8 +48,19 @@ jobject CreateDexFileObject(JNIEnv* env, jclass, jobject cookie) {
     if (dexFileClass == nullptr) {
         return nullptr;
     }
+    if (gDexFileCookieField == nullptr) {
+        gDexFileCookieField = env->GetFieldID(dexFileClass, "mCookie", "Ljava/lang/Object;");
+        if (gDexFileCookieField == nullptr) {
+            return nullptr;
+        }
+    }
     jobject dexFile = env->AllocObject(dexFileClass);
     if (dexFile == nullptr) {
+        return nullptr;
+    }
+    env->SetObjectField(dexFile, gDexFileCookieField, cookie);
+    if (env->ExceptionCheck()) {
+        env->DeleteLocalRef(dexFile);
         return nullptr;
     }
     return dexFile;
