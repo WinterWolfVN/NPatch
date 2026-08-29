@@ -25,8 +25,8 @@
 
 #include "config_impl.h"
 #include "patch_loader.h"
+#include <android/api-level.h>
 
-bool RegisterInMemoryDexBridge(JNIEnv* env);
 JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     JNIEnv* env;
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
@@ -35,8 +35,9 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     lspd::PatchLoader::Init();
     lspd::ConfigImpl::Init();
     lspd::PatchLoader::GetInstance()->Load(env);    
-    if (!RegisterInMemoryDexBridge(env)) {
-        return JNI_ERR;
-    }
-    return JNI_VERSION_1_6;
+    if (android_get_device_api_level() < 26) {
+        InMemoryDex::RegisterInMemoryDex = true;
+    } else {
+        InMemoryDex::RegisterInMemoryDex = false;
+        }
 }
