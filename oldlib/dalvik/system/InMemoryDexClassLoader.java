@@ -1,5 +1,6 @@
 package oldlib.dalvik.system;
 
+import java.nio.ByteBuffer;
 import dalvik.system.DexFile;
 import java.lang.reflect.Method;
 
@@ -9,11 +10,13 @@ public final class InMemoryDexClassLoader extends ClassLoader {
     public InMemoryDexClassLoader(ByteBuffer buffer, ClassLoader parent) {
         super(parent);
         this.dexFile = CreateDexFile(buffer);
-    
+    }
+        
     public InMemoryDexClassLoader(DexFile dexFile, ClassLoader parent) {
         super(parent);
         this.dexFile = dexFile;
-
+    }
+        
     @Override
     protected Class<?> findClass(String name)
             throws ClassNotFoundException {
