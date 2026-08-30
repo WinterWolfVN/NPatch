@@ -129,11 +129,11 @@ jobject CreateDexFileObject(JNIEnv* env, void* oat_file, const std::vector<void*
     return dexFile;
 }
 
+} // namespace InMemoryDexClassLoader
+
 static const JNINativeMethod gMethods[] = {
     {"nativeLoadClass", "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/Class;", reinterpret_cast<void*>(NativeLoadClass)}
 };
-
-} // namespace InMemoryDexClassLoader
 
 bool RegisterInMemoryDexClassLoader(JNIEnv* env) {
     if (env == nullptr) {
@@ -146,7 +146,6 @@ bool RegisterInMemoryDexClassLoader(JNIEnv* env) {
     if (clazz == nullptr) {
         return false;
     }
-    const int result = env->RegisterNatives(clazz, gMethods, sizeof(gMethods) / sizeof(gMethods[0]));
-    env->DeleteLocalRef(clazz);
+    const int result = env->RegisterNatives(clazz, gMethods, sizeof(gMethods) / sizeof(gMethods[0]));    
     return result == JNI_OK;
 }
