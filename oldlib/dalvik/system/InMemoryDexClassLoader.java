@@ -6,10 +6,13 @@ import java.lang.reflect.Method;
 public final class InMemoryDexClassLoader extends ClassLoader {
     private final DexFile dexFile;
 
+    public InMemoryDexClassLoader(ByteBuffer buffer, ClassLoader parent) {
+        super(parent);
+        this.dexFile = CreateDexFile(buffer);
+    
     public InMemoryDexClassLoader(DexFile dexFile, ClassLoader parent) {
         super(parent);
         this.dexFile = dexFile;
-    }
 
     @Override
     protected Class<?> findClass(String name)
@@ -26,6 +29,7 @@ public final class InMemoryDexClassLoader extends ClassLoader {
         }
         throw new ClassNotFoundException(name);
     }
-    
+
+    private static native DexFile CreateDexFile(ByteBuffer buffer);
     private static native Class<?> NativeBridge(String name, ClassLoader loader);
 }
