@@ -36,9 +36,5 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     lspd::PatchLoader::Init();
     lspd::ConfigImpl::Init();
     lspd::PatchLoader::GetInstance()->Load(env);    
-    if (android_get_device_api_level() < 26) {
-        InMemoryDex::RegisterInMemoryDex = true;
-    } else {
-        InMemoryDex::RegisterInMemoryDex = false;
-        }
+    bool RegisterInMemoryDexClassLoader(JNIEnv* env);
 }
