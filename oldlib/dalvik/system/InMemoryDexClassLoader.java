@@ -27,5 +27,5 @@ public final class InMemoryDexClassLoader extends ClassLoader {
         throw new ClassNotFoundException(name);
     }
     
-    private static native Class<?> nativeLoadClass(String name, ClassLoader loader);
+    private static native NativeBridge(String name, ClassLoader loader);
 }
