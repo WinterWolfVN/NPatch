@@ -1,12 +1,11 @@
 #include <jni.h>
 #include <cstdint>
 #include <vector>
+#include <android/api-level.h>
 
-namespace InMemoryDex {
+namespace InMemoryDexClassLoader {
 
-bool RegisterInMemoryDex = false;
-
-static void Log(JNIEnv* env, const char* message) {
+void Log(JNIEnv* env, const char* message) {
     jclass logClass = env->FindClass("android/util/Log");
     if (logClass == nullptr) {
         env->ExceptionClear();
@@ -31,7 +30,15 @@ static void Log(JNIEnv* env, const char* message) {
     env->DeleteLocalRef(logClass);
 }
 
-static jobject CreateDexFileObject(JNIEnv* env, void* oat_file, const std::vector<void*>& dex_files, const char* file_name) {
+static jclass NativeLoadClass(JNIEnv* env, jclass, jstring name, jobject loader) {
+    if (env == nullptr || name == nullptr || loader == nullptr) {
+        return nullptr;
+    }
+    Log(env, "nativeLoadClass()");
+    return nullptr;
+}
+
+jobject CreateDexFileObject(JNIEnv* env, void* oat_file, const std::vector<void*>& dex_files, const char* file_name) {
     if (env == nullptr || dex_files.empty()) {
         return nullptr;
     }
@@ -122,5 +129,24 @@ static jobject CreateDexFileObject(JNIEnv* env, void* oat_file, const std::vecto
     return dexFile;
 }
 
+static const JNINativeMethod gMethods[] = {
+    {"nativeLoadClass", "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/Class;", reinterpret_cast<void*>(NativeLoadClass)}
+};
 
-} // namespace InMemoryDex
+} // namespace InMemoryDexClassLoader
+
+bool RegisterInMemoryDexClassLoader(JNIEnv* env) {
+    if (env == nullptr) {
+        return false;
+    }
+    if (android_get_device_api_level() >= 26) {
+        return true;
+    }
+    jclass clazz = env->FindClass("oldlib/dalvik/system/InMemoryDexClassLoader");
+    if (clazz == nullptr) {
+        return false;
+    }
+    const int result = env->RegisterNatives(clazz, gMethods, sizeof(gMethods) / sizeof(gMethods[0]));
+    env->DeleteLocalRef(clazz);
+    return result == JNI_OK;
+}
