@@ -130,7 +130,7 @@ jobject CreateDexFileObject(JNIEnv* env, void* oat_file, const std::vector<void*
 }
 
 static const JNINativeMethod gMethods[] = {
-    {"NativeBridge", "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/Class;", reinterpret_cast<void*>(NativeLoadClass)}
+    {"NativeBridge", "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/Class;", reinterpret_cast<void*>(NativeBridge)}
 };
 
 } // namespace InMemoryDexClassLoader
