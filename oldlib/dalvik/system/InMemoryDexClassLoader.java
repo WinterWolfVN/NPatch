@@ -4,7 +4,6 @@ import dalvik.system.DexFile;
 import java.lang.reflect.Method;
 
 public final class InMemoryDexClassLoader extends ClassLoader {
-
     private final DexFile dexFile;
 
     public InMemoryDexClassLoader(DexFile dexFile, ClassLoader parent) {
@@ -27,4 +26,6 @@ public final class InMemoryDexClassLoader extends ClassLoader {
         }
         throw new ClassNotFoundException(name);
     }
+    
+    private static native Class<?> nativeLoadClass(String name, ClassLoader loader);
 }
