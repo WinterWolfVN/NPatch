@@ -30,11 +30,11 @@ void Log(JNIEnv* env, const char* message) {
     env->DeleteLocalRef(logClass);
 }
 
-static jclass NativeLoadClass(JNIEnv* env, jclass, jstring name, jobject loader) {
+static jclass NativeBridge(JNIEnv* env, jclass, jstring name, jobject loader) {
     if (env == nullptr || name == nullptr || loader == nullptr) {
         return nullptr;
     }
-    Log(env, "nativeLoadClass()");
+    Log(env, "NativeBridge()");
     return nullptr;
 }
 
@@ -129,11 +129,11 @@ jobject CreateDexFileObject(JNIEnv* env, void* oat_file, const std::vector<void*
     return dexFile;
 }
 
-} // namespace InMemoryDexClassLoader
-
 static const JNINativeMethod gMethods[] = {
-    {"nativeLoadClass", "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/Class;", reinterpret_cast<void*>(NativeLoadClass)}
+    {"NativeBridge", "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/Class;", reinterpret_cast<void*>(NativeLoadClass)}
 };
+
+} // namespace InMemoryDexClassLoader
 
 bool RegisterInMemoryDexClassLoader(JNIEnv* env) {
     if (env == nullptr) {
@@ -146,6 +146,6 @@ bool RegisterInMemoryDexClassLoader(JNIEnv* env) {
     if (clazz == nullptr) {
         return false;
     }
-    const int result = env->RegisterNatives(clazz, gMethods, sizeof(gMethods) / sizeof(gMethods[0]));    
+    const int result = env->RegisterNatives(clazz, InMemoryDexClassLoader::gMethods, sizeof(InMemoryDexClassLoader::gMethods) / sizeof(InMemoryDexClassLoader::gMethods[0]));    
     return result == JNI_OK;
 }
