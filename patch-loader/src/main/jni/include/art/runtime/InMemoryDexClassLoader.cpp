@@ -30,6 +30,13 @@ void Log(JNIEnv* env, const char* message) {
     env->DeleteLocalRef(logClass);
 }
 
+static jobject CreateDexFile(JNIEnv* env, jclass, jobject buffer) {
+    if (env == nullptr || buffer == nullptr) {
+        return nullptr;
+    }
+    return CreateDexFile(...);
+}
+
 static jclass NativeBridge(JNIEnv* env, jclass, jstring name, jobject loader) {
     if (env == nullptr || name == nullptr || loader == nullptr) {
         return nullptr;
@@ -130,6 +137,7 @@ jobject CreateDexFileObject(JNIEnv* env, void* oat_file, const std::vector<void*
 }
 
 static const JNINativeMethod gMethods[] = {
+    {"NativeCreateDexFile", "(Ljava/nio/ByteBuffer;)Ldalvik/system/DexFile;", reinterpret_cast<void*>(NativeCreateDexFile)},
     {"NativeBridge", "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/Class;", reinterpret_cast<void*>(NativeBridge)}
 };
 
