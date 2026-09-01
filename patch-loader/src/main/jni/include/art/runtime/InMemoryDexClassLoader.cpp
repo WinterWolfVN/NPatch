@@ -33,8 +33,8 @@ public:
 
 using namespace art;
 
-OpenMemoryFn ResolveOpenMemory() {
-    static OpenMemoryFn fn = reinterpret_cast<OpenMemoryFn>(dlsym(RTLD_DEFAULT, "_ZN3art7DexFile11OpenMemoryEPKhjRKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEjSt10unique_ptrINS_6MemMapESt14default_deleteISB_EEPKNS_10OatDexFileEPS8_"));
+DexFile::OpenMemoryFn ResolveOpenMemory() {
+    static DexFile::OpenMemoryFn fn = reinterpret_cast<DexFile::OpenMemoryFn>(dlsym(RTLD_DEFAULT, "_ZN3art7DexFile11OpenMemoryEPKhjRKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEjSt10unique_ptrINS_6MemMapESt14default_deleteISB_EEPKNS_10OatDexFileEPS8_"));
     return fn;
 }
 
@@ -54,6 +54,7 @@ static void ThrowIOException(JNIEnv* env, const char* message) {
     jclass cls = env->FindClass("java/io/IOException");
     if (cls != nullptr) {
         env->ThrowNew(cls, message);
+        env->DeleteLocalRef(cls);
     }
 }
 
@@ -61,6 +62,7 @@ static void ThrowIllegalArgument(JNIEnv* env, const char* message) {
     jclass cls = env->FindClass("java/lang/IllegalArgumentException");
     if (cls != nullptr) {
         env->ThrowNew(cls, message);
+        env->DeleteLocalRef(cls);
     }
 }
 
@@ -68,6 +70,7 @@ static void ThrowNullPointer(JNIEnv* env, const char* message) {
     jclass cls = env->FindClass("java/lang/NullPointerException");
     if (cls != nullptr) {
         env->ThrowNew(cls, message);
+        env->DeleteLocalRef(cls);
     }
 }
 
@@ -221,7 +224,7 @@ static jobjectArray CreateDexFile(JNIEnv* env, jclass, jobjectArray buffers) {
         ThrowNullPointer(env, "buffer == null");
         return nullptr;
     }
-    OpenMemoryFn OpenMemory = ResolveOpenMemory();
+    DexFile::OpenMemoryFn OpenMemory = ResolveOpenMemory();
     if (OpenMemory == nullptr) {
         ThrowIOException(env, "DexFile::OpenMemory not found");
         return nullptr;
@@ -330,7 +333,7 @@ extern "C" jint RegisterInMemoryDexClassLoader(JNIEnv* env) {
     if (clazz == nullptr) {
         return JNI_ERR;
     }
-    const int result = env->RegisterNatives(clazz, gMethods, sizeof(gMethods) / sizeof(gMethods[0]));    
+    const int result = env->RegisterNatives(clazz, gMethods, sizeof(gMethods) / sizeof(gMethods[0]));
     env->DeleteLocalRef(clazz);
     return result == JNI_OK ? JNI_OK : JNI_ERR;
 }
