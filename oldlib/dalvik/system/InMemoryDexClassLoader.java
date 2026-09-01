@@ -2,37 +2,43 @@ package oldlib.dalvik.system;
 
 import java.nio.ByteBuffer;
 import dalvik.system.DexFile;
-import java.lang.reflect.Method;
+import dalvik.system.DexPathList;
 
 public final class InMemoryDexClassLoader extends ClassLoader {
-    private final DexFile dexFile;
+    private final DexFile[] dexFile;
 
-    public InMemoryDexClassLoader(ByteBuffer buffer, ClassLoader parent) {
+    public InMemoryDexClassLoader(ByteBuffer[] buffer, ClassLoader parent) {
         super(parent);
         this.dexFile = CreateDexFile(buffer);
+        if (buffer == null) {
+            throw new NullPointerException("buffer == null");
+        }
     }
-        
+
     public InMemoryDexClassLoader(DexFile dexFile, ClassLoader parent) {
         super(parent);
-        this.dexFile = dexFile;
+        this.dexFile = dexFile[] { dexFile };
     }
-        
+
+    public static ByteBuffer ConvertByteToByteBuffer(byte[] dexFile) {
+        if (dexFile == null) {
+            throw new NullPointerException("dex == null");
+        }
+        return ByteBuffer.wrap(dex);
+    }
+
     @Override
-    protected Class<?> findClass(String name)
-            throws ClassNotFoundException {
-        try {
-            Method method = DexFile.class.getDeclaredMethod("loadClassBinaryName", String.class, ClassLoader.class, java.util.List.class);
-            method.setAccessible(true);
-            Class<?> result = (Class<?>) method.invoke(dexFile, name.replace('.', '/'), this, null);
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        String binaryName = name.replace('.', '/');
+        for (DexFile dex : dexFile) {
+            Class<?> result = dex.loadClassBinaryName(binaryName, this, null);
             if (result != null) {
                 return result;
             }
-        } catch (ReflectiveOperationException e) {
-            throw new ClassNotFoundException(name, e);
         }
         throw new ClassNotFoundException(name);
     }
-
-    private static native DexFile CreateDexFile(ByteBuffer buffer);
+    
+    private static native DexFile[] CreateDexFile (ByteBuffer[] buffer);
     private static native Class<?> NativeBridge(String name, ClassLoader loader);
 }
