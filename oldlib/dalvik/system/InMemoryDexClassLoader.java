@@ -17,7 +17,7 @@ public final class InMemoryDexClassLoader extends ClassLoader {
 
     public InMemoryDexClassLoader(DexFile dexFile, ClassLoader parent) {
         super(parent);
-        this.dexFile = DexFile[] { dexFile };
+        this.dexFile = new DexFile[] { dexFile };
     }
 
     public static ByteBuffer ConvertByteToByteBuffer(byte[] dexFile) {
