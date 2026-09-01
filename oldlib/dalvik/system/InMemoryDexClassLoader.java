@@ -2,17 +2,16 @@ package oldlib.dalvik.system;
 
 import java.nio.ByteBuffer;
 import dalvik.system.DexFile;
-import dalvik.system.DexPathList;
 
 public final class InMemoryDexClassLoader extends ClassLoader {
     private final DexFile[] dexFile;
 
     public InMemoryDexClassLoader(ByteBuffer[] buffer, ClassLoader parent) {
         super(parent);
-        this.dexFile = CreateDexFile(buffer);
-        if (buffer == null) {
+         if (buffer == null) {
             throw new NullPointerException("buffer == null");
         }
+        this.dexFile = CreateDexFile(buffer);
     }
 
     public InMemoryDexClassLoader(DexFile dexFile, ClassLoader parent) {
@@ -22,16 +21,15 @@ public final class InMemoryDexClassLoader extends ClassLoader {
 
     public static ByteBuffer ConvertByteToByteBuffer(byte[] dexFile) {
         if (dexFile == null) {
-            throw new NullPointerException("dex == null");
+            throw new NullPointerException("dexFile == null");
         }
-        return ByteBuffer.wrap(dex);
+        return ByteBuffer.wrap(dexFile);
     }
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
-        String binaryName = name.replace('.', '/');
         for (DexFile dex : dexFile) {
-            Class<?> result = dex.loadClassBinaryName(binaryName, this, null);
+            Class<?> result = dex.loadClass(name, this);
             if (result != null) {
                 return result;
             }
