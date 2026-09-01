@@ -21,9 +21,13 @@ public final class InMemoryDexClassLoader extends ClassLoader {
 
     public static ByteBuffer ConvertByteToByteBuffer(byte[] dexFile) {
         if (dexFile == null) {
-            throw new NullPointerException("dexFile == null");
+           throw new NullPointerException("dexFile == null");
         }
-        return ByteBuffer.wrap(dexFile);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(dexFile.length);
+        buffer.put(dexFile);
+        buffer.position(0);
+        buffer.limit(dexFile.length);
+        return buffer;
     }
 
     @Override
