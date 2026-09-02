@@ -122,7 +122,7 @@ std::unique_ptr<MemMap> MakeDexMemMap(JNIEnv* env, jobject buffer, jint start, j
 
     // Heap ByteBuffer
     jmethodID hasArrayMethod = env->GetMethodID(bufferClass, "hasArray", "()Z");
-    jmethodID arrayMethod = env->GetMethodID(bufferClass, "array", "()[B");
+    jmethodID arrayMethod = env->GetMethodID(bufferClass, "array", "()Ljava/lang/Object");
     jmethodID arrayOffsetMethod = env->GetMethodID(bufferClass, "arrayOffset", "()I");
     if (hasArrayMethod == nullptr || arrayMethod == nullptr) {
         env->DeleteLocalRef(bufferClass);
