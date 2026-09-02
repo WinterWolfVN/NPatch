@@ -14,6 +14,10 @@ public final class InMemoryDexClassLoader extends ClassLoader {
         this.dexFile = CreateDexFile(buffer);
     }
 
+    public InMemoryDexClassLoader(ByteBuffer buffer, ClassLoader parent) {
+        this(new ByteBuffer[]{buffer}, parent);
+    } 
+
     public InMemoryDexClassLoader(DexFile dexFile, ClassLoader parent) {
         super(parent);
         this.dexFile = new DexFile[] { dexFile };
