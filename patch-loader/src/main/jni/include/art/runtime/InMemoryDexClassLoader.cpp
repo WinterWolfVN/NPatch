@@ -74,36 +74,24 @@ static void ThrowNullPointer(JNIEnv* env, const char* message) {
     }
 }
 
-std::unique_ptr<MemMap> MakeDexMemMap(JNIEnv* env, jobject buffer, jint start, jint end, std::string* error) {
+std::unique_ptr<MemMap> MakeDexMemMap(JNIEnv* env, jobject buffer, jint start, jint end, jboolean hasArray, jobject arrayObject, jint arrayOffset, std::string* error) {
     if (buffer == nullptr) {
         ThrowNullPointer(env, "buffer == null");
         return nullptr;
     }
-    if (start < 0 || end < 0) {
-        ThrowIllegalArgument(env, "Invalid ByteBuffer range");
+    if (start < 0 || end <= start) {
+        ThrowIllegalArgument(env, "Invalid buffer range");
         return nullptr;
     }
     jlong capacity = env->GetDirectBufferCapacity(buffer);
     uint8_t* direct = reinterpret_cast<uint8_t*>(env->GetDirectBufferAddress(buffer));
     const bool isDirect = direct != nullptr && capacity >= 0;
-    jclass bufferClass = env->GetObjectClass(buffer);
-    if (bufferClass == nullptr) {
-        return nullptr;
-    }
-
-    if (start < 0 || end <= start) {
-        env->DeleteLocalRef(bufferClass);
-        ThrowIllegalArgument(env, "Empty ByteBuffer");
-        return nullptr;
-    }
     const size_t size = static_cast<size_t>(end - start);
     std::string mapError;
     MemMap* raw = ResolveMapAnonymous("InMemoryDexClassLoader", nullptr, size, PROT_READ | PROT_WRITE, false, false, &mapError, true);
     if (raw == nullptr) {
-        env->DeleteLocalRef(bufferClass);
-        if (error != nullptr) {
+        if (error != nullptr)
             *error = mapError;
-        }
         return nullptr;
     }
     std::unique_ptr<MemMap> map(raw);
@@ -111,60 +99,31 @@ std::unique_ptr<MemMap> MakeDexMemMap(JNIEnv* env, jobject buffer, jint start, j
     // DirectByteBuffer
     if (isDirect) {
         if (static_cast<jlong>(end) > capacity) {
-            env->DeleteLocalRef(bufferClass);
-            ThrowIllegalArgument(env, "ByteBuffer limit exceeds capacity");
+            ThrowIllegalArgument(env, "Buffer limit exceeds capacity");
             return nullptr;
         }
         std::memcpy(map->Begin(), direct + start, size);
-        env->DeleteLocalRef(bufferClass);
         return map;
     }
 
     // Heap ByteBuffer
-    jmethodID hasArrayMethod = env->GetMethodID(bufferClass, "hasArray", "()Z");
-    jmethodID arrayMethod = env->GetMethodID(bufferClass, "array", "()Ljava/lang/Object");
-    jmethodID arrayOffsetMethod = env->GetMethodID(bufferClass, "arrayOffset", "()I");
-    if (hasArrayMethod == nullptr || arrayMethod == nullptr) {
-        env->DeleteLocalRef(bufferClass);
-        ThrowIllegalArgument(env, "Unable to access ByteBuffer backing array");
+    if (!hasArray || arrayObject == nullptr) {
+        ThrowIllegalArgument(env, "ByteBuffer has no accessible array");
         return nullptr;
     }
-    jboolean hasArray = env->CallBooleanMethod(buffer, hasArrayMethod);
-    if (env->ExceptionCheck()) {
-        env->DeleteLocalRef(bufferClass);
-        return nullptr;
-    }
-    if (!hasArray) {
-        env->DeleteLocalRef(bufferClass);
-        ThrowIllegalArgument(env, "ByteBuffer has no backing array");
-        return nullptr;
-    }
-    jobject arrayObject = env->CallObjectMethod(buffer, arrayMethod);
-    if (env->ExceptionCheck() || arrayObject == nullptr) {
-        env->DeleteLocalRef(bufferClass);
-        return nullptr;
-    }
-    jint arrayOffset = env->CallIntMethod(buffer, arrayOffsetMethod);
     jbyteArray array = reinterpret_cast<jbyteArray>(arrayObject);
     jsize arrayLength = env->GetArrayLength(array);
-    const jint sourceStart = arrayOffset + start;
-    const jint sourceEnd = arrayOffset + end;
-    if (sourceStart < 0 || sourceEnd > arrayLength || sourceEnd <= sourceStart) {
-        env->DeleteLocalRef(array);
-        env->DeleteLocalRef(bufferClass);
-        ThrowIllegalArgument(env, "Invalid ByteBuffer backing array range");
+    jint sourceStart = arrayOffset + start;
+    jint sourceEnd = arrayOffset + end;
+    if (sourceStart < 0 || sourceEnd > arrayLength || sourceStart >= sourceEnd) {
+        ThrowIllegalArgument(env, "Invalid ByteBuffer array range");
         return nullptr;
     }
     jbyte* bytes = env->GetByteArrayElements(array, nullptr);
-    if (bytes == nullptr) {
-        env->DeleteLocalRef(array);
-        env->DeleteLocalRef(bufferClass);
+    if (bytes == nullptr)
         return nullptr;
-    }
     std::memcpy(map->Begin(), bytes + sourceStart, size);
     env->ReleaseByteArrayElements(array, bytes, JNI_ABORT);
-    env->DeleteLocalRef(array);
-    env->DeleteLocalRef(bufferClass);
     return map;
 }
 
@@ -184,66 +143,52 @@ jobject AllocateDexFileObject(JNIEnv* env, jclass dexFileClass, jfieldID cookieF
     return object;
 }
 
-static jobjectArray CreateDexFile(JNIEnv* env, jclass, jobjectArray buffers, jintArray positions, jintArray limits) {
-    if (buffers == nullptr) {
-        ThrowNullPointer(env, "buffer == null");
-        return nullptr;
-    }
-    if (positions == nullptr || limits == nullptr) {
-        ThrowNullPointer(env, "positions/limits == null");
+static jobjectArray CreateDexFile(JNIEnv* env, jclass, jobjectArray buffers, jintArray positions, jintArray limits, jbooleanArray hasArrays, jobjectArray arrays, jintArray arrayOffsets) {
+    if (buffers == nullptr || positions == nullptr || limits == nullptr || hasArrays == nullptr || arrays == nullptr || arrayOffsets == nullptr) {
+        ThrowNullPointer(env, "Null argument");
         return nullptr;
     }
     const jsize count = env->GetArrayLength(buffers);
     DexFile::OpenMemoryFn OpenMemory = ResolveOpenMemory();
     jclass dexFileClass = env->FindClass("dalvik/system/DexFile");
-    if (dexFileClass == nullptr) {
-        return nullptr;
-    }
     jfieldID cookieField = env->GetFieldID(dexFileClass, "mCookie", "Ljava/lang/Object;");
     jfieldID internalCookieField = env->GetFieldID(dexFileClass, "mInternalCookie", "Ljava/lang/Object;");
     if (cookieField == nullptr || internalCookieField == nullptr) {
         env->DeleteLocalRef(dexFileClass);
         return nullptr;
     }
-    jobjectArray result =env->NewObjectArray(count, dexFileClass, nullptr);
+    jobjectArray result = env->NewObjectArray(count, dexFileClass, nullptr);
     jint* positionPtr = env->GetIntArrayElements(positions, nullptr);
     jint* limitPtr = env->GetIntArrayElements(limits, nullptr);
+    jboolean* hasArrayPtr = env->GetBooleanArrayElements(hasArrays, nullptr);
+    jint* arrayOffsetPtr = env->GetIntArrayElements(arrayOffsets, nullptr);
     for (jsize i = 0; i < count; ++i) {
         jobject buffer = env->GetObjectArrayElement(buffers, i);
-        const jint position = positionPtr[i];
-        const jint limit = limitPtr[i];
-        if (position < 0 || limit < position) {
-            env->DeleteLocalRef(buffer);
-            env->ReleaseIntArrayElements(positions, positionPtr, JNI_ABORT);
-            env->ReleaseIntArrayElements(limits, limitPtr, JNI_ABORT);
-            env->DeleteLocalRef(result);
-            env->DeleteLocalRef(dexFileClass);
-            ThrowIOException(env, "Invalid ByteBuffer position/limit");
-            return nullptr;
-        }
-        std::string mapError;
-        std::unique_ptr<MemMap> map = MakeDexMemMap(env, buffer, position, limit, &mapError);
+        jobject arrayObject = env->GetObjectArrayElement(arrays, i);
+        std::string error;
+        std::unique_ptr<MemMap> map = MakeDexMemMap(env, buffer, positionPtr[i], limitPtr[i], hasArrayPtr[i], arrayObject, arrayOffsetPtr[i], &error);
         env->DeleteLocalRef(buffer);
+        if (arrayObject != nullptr)
+            env->DeleteLocalRef(arrayObject);
+        if (!map)
+            goto cleanup;
         const uint8_t* base = map->Begin();
         const size_t size = map->Size();
-        if (base == nullptr || size == 0) {
-            env->ReleaseIntArrayElements(positions, positionPtr, JNI_ABORT);
-            env->ReleaseIntArrayElements(limits, limitPtr, JNI_ABORT);
-            env->DeleteLocalRef(result);
-            env->DeleteLocalRef(dexFileClass);
-            ThrowIOException(env, "Invalid MemMap");
-            return nullptr;
-        }
-        std::string location ="InMemoryDexClassLoader-" + std::to_string(static_cast<int>(i));
-        std::string error;
-        std::unique_ptr<const DexFile> dex =OpenMemory(base, size, location, 0, std::move(map), nullptr, &error);
+        std::string location = "InMemoryDexClassLoader-" + std::to_string(static_cast<int>(i));
+        std::unique_ptr<const DexFile> dex = OpenMemory(base, size, location, 0, std::move(map), nullptr, &error);
+        if (!dex)
+            goto cleanup;
         DexFile* nativeDexFile = const_cast<DexFile*>(dex.release());
         jobject javaDexFile = AllocateDexFileObject(env, dexFileClass, cookieField, internalCookieField, nativeDexFile);
         env->SetObjectArrayElement(result, i, javaDexFile);
         env->DeleteLocalRef(javaDexFile);
     }
+
+cleanup:
     env->ReleaseIntArrayElements(positions, positionPtr, JNI_ABORT);
     env->ReleaseIntArrayElements(limits, limitPtr, JNI_ABORT);
+    env->ReleaseBooleanArrayElements(hasArrays, hasArrayPtr, JNI_ABORT);
+    env->ReleaseIntArrayElements(arrayOffsets, arrayOffsetPtr, JNI_ABORT);
     env->DeleteLocalRef(dexFileClass);
     return result;
 }
@@ -259,16 +204,8 @@ static jobject NativeBridge(JNIEnv* env, jclass, jstring name, jobject loader) {
 }
 
 static const JNINativeMethod gMethods[] = {
-    {
-        "CreateDexFile",
-        "([Ljava/nio/ByteBuffer;)[Ldalvik/system/DexFile;",
-        reinterpret_cast<void*>(CreateDexFile)
-    },
-    {
-        "NativeBridge",
-        "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/Class;",
-        reinterpret_cast<void*>(NativeBridge)
-    }
+    {"CreateDexFile", "([Ljava/nio/ByteBuffer;[I[I[Z[Ljava/lang/Object;[I)[Ldalvik/system/DexFile;", reinterpret_cast<void*>(CreateDexFile)},
+    {"NativeBridge", "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/Class;", reinterpret_cast<void*>(NativeBridge)}
 };
 
 extern "C" jint RegisterInMemoryDexClassLoader(JNIEnv* env) {
