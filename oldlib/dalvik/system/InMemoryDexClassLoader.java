@@ -8,15 +8,33 @@ public final class InMemoryDexClassLoader extends ClassLoader {
 
     public InMemoryDexClassLoader(ByteBuffer[] buffer, ClassLoader parent) {
         super(parent);
-         if (buffer == null) {
-            throw new NullPointerException("buffer == null");
+        if (buffer == null) {
+           throw new NullPointerException("buffer == null");
         }
-        this.dexFile = CreateDexFile(buffer);
+        int count = buffer.length;
+        int[] positions = new int[count];
+        int[] limits = new int[count];
+        boolean[] hasArrays = new boolean[count];
+        Object[] arrays = new Object[count];
+        int[] arrayOffsets = new int[count];
+        for (int i = 0; i < count; i++) {
+            if (buffer[i] == null) {
+               throw new NullPointerException("buffer[" + i + "] == null");
+            }
+            positions[i] = buffer[i].position();
+            limits[i] = buffer[i].limit();
+            hasArrays[i] = buffer[i].hasArray();
+            if (hasArrays[i]) {
+               arrays[i] = buffer[i].array();
+               arrayOffsets[i] = buffer[i].arrayOffset();
+            }
+        }
+        this.dexFile = CreateDexFile(buffer, positions, limits, hasArrays, arrays, arrayOffsets);
     }
-
+    
     public InMemoryDexClassLoader(ByteBuffer buffer, ClassLoader parent) {
         this(new ByteBuffer[]{buffer}, parent);
-    } 
+    }
 
     public InMemoryDexClassLoader(DexFile dexFile, ClassLoader parent) {
         super(parent);
@@ -33,7 +51,7 @@ public final class InMemoryDexClassLoader extends ClassLoader {
         buffer.limit(dexFile.length);
         return buffer;
     }
-
+    
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         for (DexFile dex : dexFile) {
@@ -44,7 +62,7 @@ public final class InMemoryDexClassLoader extends ClassLoader {
         }
         throw new ClassNotFoundException(name);
     }
-    
-    private static native DexFile[] CreateDexFile (ByteBuffer[] buffer);
+
+    private static native DexFile[] CreateDexFile(ByteBuffer[] buffers, int[] positions, int[] limits, boolean[] hasArrays, Object[] arrays, int[] arrayOffsets);
     private static native Class<?> NativeBridge(String name, ClassLoader loader);
-}
+            }
