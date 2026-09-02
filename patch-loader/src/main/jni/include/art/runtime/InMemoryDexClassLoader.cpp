@@ -199,7 +199,7 @@ static jobjectArray CreateDexFile(JNIEnv* env, jclass, jobjectArray buffers, jin
     if (dexFileClass == nullptr) {
         return nullptr;
     }
-    jfieldID cookieField = env->GetFieldID(dexFileClass, "mCookie" "Ljava/lang/Object;");
+    jfieldID cookieField = env->GetFieldID(dexFileClass, "mCookie", "Ljava/lang/Object;");
     jfieldID internalCookieField = env->GetFieldID(dexFileClass, "mInternalCookie", "Ljava/lang/Object;");
     if (cookieField == nullptr || internalCookieField == nullptr) {
         env->DeleteLocalRef(dexFileClass);
