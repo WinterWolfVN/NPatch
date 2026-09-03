@@ -180,8 +180,10 @@ static jobjectArray CreateDexFile(JNIEnv* env, jclass, jobjectArray buffers, jin
             goto cleanup;
         DexFile* nativeDexFile = const_cast<DexFile*>(dex.release());
         jobject javaDexFile = AllocateDexFileObject(env, dexFileClass, cookieField, internalCookieField, nativeDexFile);
-        env->SetObjectArrayElement(result, i, javaDexFile);
-        env->DeleteLocalRef(javaDexFile);
+        if (javaDexFile == nullptr)
+           goto cleanup;
+           env->SetObjectArrayElement(result, i, javaDexFile);
+           env->DeleteLocalRef(javaDexFile);
     }
 
 cleanup:
@@ -193,19 +195,8 @@ cleanup:
     return result;
 }
 
-static jobject NativeBridge(JNIEnv* env, jclass, jstring name, jobject loader) {
-    if (name == nullptr) {
-        return nullptr;
-    }
-    if (loader == nullptr) {
-        return nullptr;
-    }
-    return nullptr;
-}
-
 static const JNINativeMethod gMethods[] = {
     {"CreateDexFile", "([Ljava/nio/ByteBuffer;[I[I[Z[Ljava/lang/Object;[I)[Ldalvik/system/DexFile;", reinterpret_cast<void*>(CreateDexFile)},
-    {"NativeBridge", "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/Class;", reinterpret_cast<void*>(NativeBridge)}
 };
 
 extern "C" jint RegisterInMemoryDexClassLoader(JNIEnv* env) {
