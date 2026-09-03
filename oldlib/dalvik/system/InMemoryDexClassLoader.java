@@ -5,6 +5,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import dalvik.system.DexFile;
 
 public final class InMemoryDexClassLoader extends ClassLoader {
     private final DexFile[] dexFile;
