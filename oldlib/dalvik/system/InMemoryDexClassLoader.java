@@ -1,7 +1,10 @@
 package oldlib.dalvik.system;
 
+import java.io.File;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import dalvik.system.DexFile;
 
 public final class InMemoryDexClassLoader extends ClassLoader {
     private final DexFile[] dexFile;
@@ -30,6 +33,7 @@ public final class InMemoryDexClassLoader extends ClassLoader {
             }
         }
         this.dexFile = CreateDexFile(buffer, positions, limits, hasArrays, arrays, arrayOffsets);
+        setDexElements(dexFile);
     }
     
     public InMemoryDexClassLoader(ByteBuffer buffer, ClassLoader parent) {
@@ -52,16 +56,36 @@ public final class InMemoryDexClassLoader extends ClassLoader {
         return buffer;
     }
     
-    @Override
-    protected Class<?> findClass(String name) throws ClassNotFoundException {
-        for (DexFile dex : dexFile) {
-            Class<?> result = dex.loadClass(name, this);
-            if (result != null) {
-                return result;
+   private void setDexElements(DexFile[] dexFile) {
+    try {
+        Class<?> baseClass = Class.forName("dalvik.system.BaseDexClassLoader");
+        Field pathListField = baseClass.getDeclaredField("pathList");
+        pathListField.setAccessible(true);
+        Object pathList = pathListField.get(this);
+        Class<?> pathListClass = Class.forName("dalvik.system.DexPathList");
+        Field dexElementsField = pathListClass.getDeclaredField("dexElements");
+        dexElementsField.setAccessible(true);
+        Object oldElements = dexElementsField.get(pathList);
+        Class<?> elementClass = Class.forName("dalvik.system.DexPathList$Element");
+        Constructor<?> elementConstructor = elementClass.getDeclaredConstructor(File.class, boolean.class, File.class, DexFile.class);
+        elementConstructor.setAccessible(true);
+        int oldLength = Array.getLength(oldElements);
+        int newLength = dexFile.length;
+        Object mergedElements = Array.newInstance(elementClass, oldLength + newLength);
+        System.arraycopy(oldElements, 0, mergedElements, 0, oldLength);
+        for (int i = 0; i < newLength; i++) {
+            DexFile dexFile = dexFile[i];
+            if (dexFile == null) {
+                throw new NullPointerException("dexFile[" + i + "] == null");
             }
+            Object element = elementConstructor.newInstance(null, false, null, dexFile);
+            Array.set(mergedElements, oldLength + i, element);
         }
-        throw new ClassNotFoundException(name);
+        dexElementsField.set(pathList, mergedElements);
+    } catch (Exception e) {
+        throw new RuntimeException("Unable to merge in-memory dex elements", e);
     }
+}
 
     private static native DexFile[] CreateDexFile(ByteBuffer[] buffers, int[] positions, int[] limits, boolean[] hasArrays, Object[] arrays, int[] arrayOffsets);
             }
