@@ -64,5 +64,4 @@ public final class InMemoryDexClassLoader extends ClassLoader {
     }
 
     private static native DexFile[] CreateDexFile(ByteBuffer[] buffers, int[] positions, int[] limits, boolean[] hasArrays, Object[] arrays, int[] arrayOffsets);
-    private static native Class<?> NativeBridge(String name, ClassLoader loader);
             }
