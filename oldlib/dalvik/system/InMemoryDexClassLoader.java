@@ -76,7 +76,7 @@ public final class InMemoryDexClassLoader extends ClassLoader {
             System.arraycopy(oldElements, 0, mergedElements, 0, oldLength);
             for (int i = 0; i < newLength; i++) {
                 DexFile currentDexFile = dexFiles[i];
-                if (dexFiles == null) {
+                if (currentDexFile == null) {
                     throw new NullPointerException("dexFiles[" + i + "] == null");
                 }
                 Object element = elementConstructor.newInstance(null, false, null, currentDexFile);
