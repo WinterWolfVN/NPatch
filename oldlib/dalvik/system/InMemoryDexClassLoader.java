@@ -79,7 +79,7 @@ public final class InMemoryDexClassLoader extends ClassLoader {
                 if (dexFiles == null) {
                     throw new NullPointerException("dexFiles[" + i + "] == null");
                 }
-                Object element = elementConstructor.newInstance(null, false, null, dexFile);
+                Object element = elementConstructor.newInstance(null, false, null, currentDexFile);
                 Array.set(mergedElements, oldLength + i, element);
             }
             dexElementsField.set(pathList, mergedElements);
