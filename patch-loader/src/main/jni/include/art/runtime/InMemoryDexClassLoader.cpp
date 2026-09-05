@@ -143,11 +143,7 @@ jobject AllocateDexFileObject(JNIEnv* env, jclass dexFileClass, jfieldID cookieF
     return object;
 }
 
-static jobjectArray CreateDexFile(JNIEnv* env, jclass, jobjectArray buffers, jintArray positions, jintArray limits, jbooleanArray hasArrays, jobjectArray arrays, jintArray arrayOffsets) {
-    if (buffers == nullptr || positions == nullptr || limits == nullptr || hasArrays == nullptr || arrays == nullptr || arrayOffsets == nullptr) {
-        ThrowNullPointer(env, "Null argument");
-        return nullptr;
-    }
+static jobjectArray CreateDexFile(JNIEnv* env, jclass, jobjectArray buffers, jintArray positions, jintArray limits, jbooleanArray hasArrays, jobjectArray arrays, jintArray arrayOffsets) {    
     const jsize count = env->GetArrayLength(buffers);
     DexFile::OpenMemoryFn OpenMemory = ResolveOpenMemory();
     jclass dexFileClass = env->FindClass("dalvik/system/DexFile");
