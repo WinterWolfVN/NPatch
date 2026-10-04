@@ -136,22 +136,6 @@ jobs:
       shell: bash
       run: rm -rf "$ANDROID_HOME/cmake"
 
-    - name: 設定構建環境
-      run: |
-        # for libxposed/api build
-        echo 'org.gradle.jvmargs=-Xmx2048m' >> libxposed/api/gradle.properties
-
-        # for main project build
-        {
-          echo 'org.gradle.parallel=true'
-          echo 'org.gradle.jvmargs=-Xmx2048m'
-          echo 'android.native.buildOutput=verbose'
-        } >> gradle.properties
-
-        # for libxposed build
-        echo 'org.gradle.jvmargs=-Xmx2048m' >> libxposed/api/gradle.properties
-        echo 'org.gradle.jvmargs=-Xmx2048m' >> libxposed/service/gradle.properties
-
     - name: 授予 gradlew 執行權限
       run: chmod +x gradlew
 
